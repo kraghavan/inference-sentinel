@@ -1,0 +1,59 @@
+{
+  "tier_0_public": [
+    {
+      "messages": [{"role": "user", "content": "What is the capital of France?"}],
+      "expected_tier": 0,
+      "description": "Simple factual question with no PII"
+    },
+    {
+      "messages": [{"role": "user", "content": "Explain how photosynthesis works."}],
+      "expected_tier": 0,
+      "description": "Educational question"
+    },
+    {
+      "messages": [{"role": "user", "content": "Write a haiku about mountains."}],
+      "expected_tier": 0,
+      "description": "Creative writing request"
+    }
+  ],
+  "tier_2_confidential": [
+    {
+      "messages": [{"role": "user", "content": "Send an email to john.doe@company.com about the meeting."}],
+      "expected_tier": 2,
+      "expected_entities": ["email"],
+      "description": "Contains email address"
+    },
+    {
+      "messages": [{"role": "user", "content": "Call me back at 555-123-4567."}],
+      "expected_tier": 2,
+      "expected_entities": ["phone"],
+      "description": "Contains phone number"
+    },
+    {
+      "messages": [{"role": "user", "content": "My API key is sk-1234567890abcdef, can you help debug?"}],
+      "expected_tier": 2,
+      "expected_entities": ["api_key"],
+      "description": "Contains API key"
+    }
+  ],
+  "tier_3_restricted": [
+    {
+      "messages": [{"role": "user", "content": "Process payment for card 4111-1111-1111-1111."}],
+      "expected_tier": 3,
+      "expected_entities": ["credit_card"],
+      "description": "Contains credit card number"
+    },
+    {
+      "messages": [{"role": "user", "content": "Look up patient SSN 123-45-6789 in the system."}],
+      "expected_tier": 3,
+      "expected_entities": ["ssn"],
+      "description": "Contains SSN"
+    },
+    {
+      "messages": [{"role": "user", "content": "Here's my AWS key: AKIAIOSFODNN7EXAMPLE"}],
+      "expected_tier": 3,
+      "expected_entities": ["aws_access_key"],
+      "description": "Contains AWS access key"
+    }
+  ]
+}

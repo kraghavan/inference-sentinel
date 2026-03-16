@@ -1,0 +1,157 @@
+# Privacy Taxonomy Configuration
+# Defines entity types and their classification tiers
+
+# Tier Definitions:
+#   0 - PUBLIC: No sensitive content, safe for cloud
+#   1 - INTERNAL: Business context, cloud allowed with logging
+#   2 - CONFIDENTIAL: PII, credentials - local by default
+#   3 - RESTRICTED: Regulated data - always local, no override
+
+tiers:
+  0:
+    label: PUBLIC
+    description: "No sensitive content detected"
+    default_route: cloud
+    override_allowed: true
+    
+  1:
+    label: INTERNAL
+    description: "Business context, non-regulated"
+    default_route: cloud
+    override_allowed: true
+    
+  2:
+    label: CONFIDENTIAL
+    description: "PII, credentials, proprietary data"
+    default_route: local
+    override_allowed: true
+    
+  3:
+    label: RESTRICTED
+    description: "Regulated data (PHI, financial PII)"
+    default_route: local
+    override_allowed: false
+
+# Entity Definitions
+entities:
+  # ============== TIER 3 - RESTRICTED ==============
+  ssn:
+    tier: 3
+    description: "US Social Security Number"
+    patterns:
+      - "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      - "\\b\\d{3}\\s\\d{2}\\s\\d{4}\\b"
+      - "(?i)\\bssn[:\\s]*\\d{3}[-\\s]?\\d{2}[-\\s]?\\d{4}\\b"
+      
+  credit_card:
+    tier: 3
+    description: "Credit/Debit Card Number"
+    patterns:
+      # Visa
+      - "\\b4[0-9]{12}(?:[0-9]{3})?\\b"
+      # Mastercard
+      - "\\b5[1-5][0-9]{14}\\b"
+      # Amex
+      - "\\b3[47][0-9]{13}\\b"
+      # Discover
+      - "\\b6(?:011|5[0-9]{2})[0-9]{12}\\b"
+      
+  bank_account:
+    tier: 3
+    description: "Bank Account + Routing Numbers"
+    patterns:
+      - "(?i)\\b(?:account|acct)(?:\\s*(?:number|no|num|#))?[:\\s#]*\\d{8,17}\\b"
+      - "(?i)\\brouting(?:\\s*(?:number|no|num|#))?[:\\s#]*\\d{9}\\b"
+      - "(?i)\\baba[:\\s#]*\\d{9}\\b"
+      
+  health_record:
+    tier: 3
+    description: "Protected Health Information (PHI)"
+    patterns:
+      - "(?i)\\bmrn[:\\s]*\\d{6,12}\\b"
+      - "(?i)\\bmedical\\s*record[:\\s#]*\\d{6,12}\\b"
+      - "(?i)\\bnpi[:\\s]*\\d{10}\\b"
+      - "(?i)\\bhealth\\s*insurance[:\\s#]*[A-Z0-9]{8,15}\\b"
+
+  # ============== TIER 2 - CONFIDENTIAL ==============
+  email:
+    tier: 2
+    description: "Email Address"
+    patterns:
+      - "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"
+      
+  phone:
+    tier: 2
+    description: "Phone Number"
+    patterns:
+      - "\\b(?:\\+?1[-.\\s]?)?\\(?[0-9]{3}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4}\\b"
+      - "\\b\\d{3}[-.\\s]\\d{3}[-.\\s]\\d{4}\\b"
+      
+  address:
+    tier: 2
+    description: "Physical Address"
+    patterns:
+      - "(?i)\\b\\d{1,5}\\s+[A-Za-z]+\\s+(?:street|st|avenue|ave|road|rd|boulevard|blvd|drive|dr|lane|ln|way|court|ct)\\b"
+      
+  dob:
+    tier: 2
+    description: "Date of Birth"
+    patterns:
+      - "(?i)\\b(?:dob|date\\s*of\\s*birth|born|birthday)[:\\s]*\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b"
+      - "(?i)\\b(?:dob|date\\s*of\\s*birth|born)[:\\s]*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\s+\\d{1,2},?\\s+\\d{4}\\b"
+      
+  api_key:
+    tier: 2
+    description: "API Keys and Tokens"
+    patterns:
+      # OpenAI
+      - "\\bsk-[a-zA-Z0-9]{32,}\\b"
+      # Anthropic
+      - "\\bsk-ant-[a-zA-Z0-9-]{32,}\\b"
+      # AWS Access Key
+      - "\\bAKIA[0-9A-Z]{16}\\b"
+      # GitHub
+      - "\\bghp_[a-zA-Z0-9]{36}\\b"
+      - "\\bgho_[a-zA-Z0-9]{36}\\b"
+      # Generic API key pattern
+      - "(?i)\\b(?:api[_-]?key|apikey|api[_-]?secret)[\\s:=]+[\"']?[a-zA-Z0-9_-]{20,}[\"']?"
+      
+  password:
+    tier: 2
+    description: "Passwords and Secrets"
+    patterns:
+      - "(?i)\\b(?:password|passwd|pwd)[\\s:=]+[\"']?[^\\s\"']{6,}[\"']?"
+      - "(?i)\\b(?:secret|token)[\\s:=]+[\"']?[a-zA-Z0-9_-]{16,}[\"']?"
+      
+  private_key:
+    tier: 2
+    description: "Cryptographic Private Keys"
+    patterns:
+      - "-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
+      - "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+      
+  ip_address_internal:
+    tier: 2
+    description: "Internal IP Addresses"
+    patterns:
+      - "\\b(?:10\\.\\d{1,3}|172\\.(?:1[6-9]|2\\d|3[01])|192\\.168)\\.\\d{1,3}\\.\\d{1,3}\\b"
+
+  # ============== TIER 1 - INTERNAL ==============
+  employee_id:
+    tier: 1
+    description: "Employee Identifiers"
+    patterns:
+      - "(?i)\\b(?:employee|emp)[\\s_-]?(?:id|number|no|#)[:\\s]*[A-Z0-9]{4,10}\\b"
+      
+  project_code:
+    tier: 1
+    description: "Internal Project Codes"
+    patterns:
+      - "(?i)\\b(?:project|proj)[\\s_-]?(?:id|code|number)[:\\s]*[A-Z0-9-]{4,15}\\b"
+      
+  internal_url:
+    tier: 1
+    description: "Internal URLs"
+    patterns:
+      - "(?i)\\bhttps?://(?:internal|intranet|corp|private)[.\\w-]+\\.[a-z]{2,}\\b"
+      - "(?i)\\bhttps?://[\\w-]+\\.(?:internal|local|corp|lan)\\b"
