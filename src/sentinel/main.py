@@ -4,41 +4,52 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-import structlog
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from sentinel.api import router, set_backend_manager
 from sentinel.backends import BackendManager, AnthropicBackend, GoogleBackend
 from sentinel.config import LocalBackendsConfig, LocalEndpoint, get_settings
-
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer(),
-    ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
+from sentinel.telemetry import (
+    setup_logging,
+    setup_tracing,
+    get_logger,
+    get_metrics,
+    get_content_type,
+    init_app_info,
+    set_backend_health,
 )
 
-logger = structlog.get_logger()
+# Initialize logging first
+settings = get_settings()
+setup_logging(
+    log_level=settings.telemetry.log_level,
+    json_logs=True,  # JSON for Loki
+)
+
+logger = get_logger("sentinel.main")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     settings = get_settings()
+
+    # Initialize tracing
+    if settings.telemetry.otlp_endpoint:
+        setup_tracing(
+            service_name=settings.telemetry.service_name,
+            service_version="0.1.0",
+            otlp_endpoint=settings.telemetry.otlp_endpoint,
+        )
+        logger.info(
+            "OpenTelemetry tracing initialized",
+            otlp_endpoint=settings.telemetry.otlp_endpoint
+        )
+    
+    # Initialize app info metric
+    init_app_info(version="0.1.0", env=settings.env)
 
     logger.info(
         "Starting inference-sentinel",
@@ -69,6 +80,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize backend manager
     backend_manager = BackendManager(local_config)
     await backend_manager.initialize()
+    
+    # Update health metrics for local backends (initial status already checked in initialize)
+    for endpoint in local_config.endpoints:
+        if endpoint.enabled:
+            healthy = backend_manager._health_status.get(endpoint.name, False)
+            set_backend_health(endpoint.name, healthy, is_cloud=False)
 
     # Initialize cloud backends if API keys are provided
     cloud_config = settings.cloud
@@ -81,6 +98,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             timeout=cloud_config.timeout_seconds,
         )
         backend_manager.add_cloud_backend("anthropic", anthropic_backend)
+        set_backend_health("anthropic", True, is_cloud=True)
     
     if cloud_config.google_api_key:
         logger.info("Initializing Google backend")
@@ -90,6 +108,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             timeout=cloud_config.timeout_seconds,
         )
         backend_manager.add_cloud_backend("google", google_backend)
+        set_backend_health("google", True, is_cloud=True)
 
     # Initialize cloud backends
     if backend_manager.has_cloud_backends:
@@ -110,7 +129,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async def health_check_loop() -> None:
         while True:
             await asyncio.sleep(local_config.health_check_interval_seconds)
-            await backend_manager.refresh_health()
+            health_status = await backend_manager.refresh_health()
+            # Update metrics
+            for endpoint_name, healthy in health_status.items():
+                set_backend_health(endpoint_name, healthy, is_cloud=False)
 
     health_task = asyncio.create_task(health_check_loop())
 
@@ -152,6 +174,15 @@ def create_app() -> FastAPI:
 
     # Include API routes
     app.include_router(router)
+    
+    # Metrics endpoint (for Prometheus scraping)
+    @app.get("/metrics", include_in_schema=False)
+    async def metrics() -> Response:
+        """Prometheus metrics endpoint."""
+        return Response(
+            content=get_metrics(),
+            media_type=get_content_type()
+        )
 
     return app
 

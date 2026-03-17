@@ -69,6 +69,93 @@ class TelemetryConfig(BaseSettings):
     metrics_port: int = Field(default=9090)
 
 
+class NERConfig(BaseSettings):
+    """Configuration for NER-based classification."""
+    
+    enabled: bool = Field(default=False, description="Enable NER classification")
+    model: Literal["fast", "accurate", "multilingual"] = Field(
+        default="fast",
+        description="NER model: fast (BERT), accurate (RoBERTa), multilingual"
+    )
+    device: Literal["cpu", "cuda", "mps"] = Field(
+        default="cpu",
+        description="Device for NER inference"
+    )
+    confidence_threshold: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence for NER entities"
+    )
+    skip_if_regex_tier_gte: int = Field(
+        default=3,
+        description="Skip NER if regex tier >= this value"
+    )
+
+
+class ShadowConfig(BaseSettings):
+    """Configuration for shadow mode (A/B comparison)."""
+    
+    enabled: bool = Field(default=False, description="Enable shadow mode")
+    shadow_tiers: list[int] = Field(
+        default=[0, 1],
+        description="Privacy tiers to shadow"
+    )
+    sample_rate: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Fraction of requests to shadow"
+    )
+    similarity_enabled: bool = Field(
+        default=True,
+        description="Enable similarity scoring"
+    )
+    similarity_model: Literal["fast", "balanced", "accurate"] = Field(
+        default="fast",
+        description="Embedding model for similarity"
+    )
+    similarity_device: Literal["cpu", "cuda", "mps"] = Field(
+        default="cpu",
+        description="Device for similarity computation"
+    )
+    local_timeout_seconds: float = Field(
+        default=60.0,
+        description="Timeout for shadow local inference"
+    )
+    store_responses: bool = Field(
+        default=False,
+        description="Store full responses (memory heavy)"
+    )
+    max_stored_results: int = Field(
+        default=1000,
+        description="Maximum shadow results to store"
+    )
+
+
+class CloudSelectionConfig(BaseSettings):
+    """Configuration for cloud backend selection strategy."""
+    
+    strategy: Literal["primary_fallback", "round_robin"] = Field(
+        default="round_robin",
+        description="How to select between cloud backends"
+    )
+    primary: Literal["anthropic", "google"] = Field(
+        default="anthropic",
+        description="Primary cloud backend (for primary_fallback strategy)"
+    )
+    fallback: Literal["anthropic", "google", "none"] = Field(
+        default="google",
+        description="Fallback cloud backend (for primary_fallback strategy)"
+    )
+    max_retries: int = Field(default=2, description="Max retries before fallback")
+    retry_delay_ms: int = Field(default=500, description="Delay between retries")
+    fallback_to_local_on_timeout: bool = Field(
+        default=True,
+        description="Fall back to local if all cloud fails"
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -91,6 +178,13 @@ class Settings(BaseSettings):
     # Backends
     local: LocalBackendsConfig = Field(default_factory=LocalBackendsConfig)
     cloud: CloudBackendsConfig = Field(default_factory=CloudBackendsConfig)
+    cloud_selection: CloudSelectionConfig = Field(default_factory=CloudSelectionConfig)
+
+    # Classification
+    ner: NERConfig = Field(default_factory=NERConfig)
+    
+    # Shadow mode
+    shadow: ShadowConfig = Field(default_factory=ShadowConfig)
 
     # Telemetry
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)

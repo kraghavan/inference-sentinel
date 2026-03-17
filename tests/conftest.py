@@ -9,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 
 from sentinel.backends import BackendManager
 from sentinel.config import LocalBackendsConfig, LocalEndpoint
-from sentinel.main import create_app
 
 
 @pytest.fixture(scope="session")
@@ -58,7 +57,14 @@ async def backend_manager(
 
 @pytest_asyncio.fixture
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
-    """Create an async test client for the FastAPI app."""
+    """Create an async test client for the FastAPI app.
+    
+    Note: This fixture is for integration tests only.
+    It requires all dependencies (including prometheus_client, etc.)
+    """
+    # Lazy import to avoid loading full app for unit tests
+    from sentinel.main import create_app
+    
     app = create_app()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

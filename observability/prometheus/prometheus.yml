@@ -26,7 +26,7 @@ scrape_configs:
   # inference-sentinel metrics
   - job_name: 'sentinel'
     static_configs:
-      - targets: ['sentinel:9090']
+      - targets: ['sentinel:8000']
     metrics_path: /metrics
     scrape_interval: 5s
 

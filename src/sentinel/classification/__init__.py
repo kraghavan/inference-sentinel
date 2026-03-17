@@ -20,9 +20,24 @@ from sentinel.classification.taxonomy import (
     load_taxonomy,
     reload_taxonomy,
 )
+from sentinel.classification.ner_classifier import (
+    NERClassifier,
+    NEREntity,
+    NERResult,
+    get_ner_classifier,
+    configure_ner,
+)
+from sentinel.classification.hybrid_classifier import (
+    HybridClassifier,
+    HybridResult,
+    get_hybrid_classifier,
+    configure_hybrid_classifier,
+    classify_hybrid,
+    classify_messages_hybrid,
+)
 
 __all__ = [
-    # Classifier
+    # Regex Classifier
     "RegexClassifier",
     "classify",
     "classify_messages",
@@ -39,4 +54,17 @@ __all__ = [
     "get_taxonomy",
     "load_taxonomy",
     "reload_taxonomy",
+    # NER Classifier
+    "NERClassifier",
+    "NEREntity",
+    "NERResult",
+    "get_ner_classifier",
+    "configure_ner",
+    # Hybrid Classifier
+    "HybridClassifier",
+    "HybridResult",
+    "get_hybrid_classifier",
+    "configure_hybrid_classifier",
+    "classify_hybrid",
+    "classify_messages_hybrid",
 ]

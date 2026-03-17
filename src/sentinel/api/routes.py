@@ -4,7 +4,6 @@ import time
 import uuid
 from typing import Annotated, Literal
 
-import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -19,16 +18,35 @@ from sentinel.api.schemas import (
     Usage,
 )
 from sentinel.backends import BackendManager
-from sentinel.classification import classify_messages, ClassificationResult
+from sentinel.classification import (
+    classify_messages,
+    ClassificationResult,
+    get_hybrid_classifier,
+    classify_messages_hybrid,
+)
 from sentinel.routing import route as route_request, RoutingDecision
+from sentinel.shadow import ShadowRunner, get_shadow_runner
+from sentinel.telemetry import (
+    get_logger,
+    record_request,
+    record_latencies,
+    record_tokens,
+    record_classification,
+    record_cost,
+    record_routing_latency,
+    record_error,
+    record_fallback,
+    REQUESTS_IN_PROGRESS,
+)
 
-logger = structlog.get_logger()
+logger = get_logger("sentinel.api")
 
 router = APIRouter()
 
 
 # Dependency to get backend manager (will be set during app startup)
 _backend_manager: BackendManager | None = None
+_shadow_runner: ShadowRunner | None = None
 
 
 def get_backend_manager() -> BackendManager:
@@ -42,6 +60,12 @@ def set_backend_manager(manager: BackendManager) -> None:
     """Set the backend manager instance."""
     global _backend_manager
     _backend_manager = manager
+
+
+def set_shadow_runner(runner: ShadowRunner) -> None:
+    """Set the shadow runner instance."""
+    global _shadow_runner
+    _shadow_runner = runner
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -90,6 +114,15 @@ async def inference(
     classification_start = time.perf_counter()
     classification = classify_messages(messages)
     classification_latency_ms = (time.perf_counter() - classification_start) * 1000
+    
+    # Record classification metrics
+    record_classification(
+        tier=classification.tier,
+        tier_label=classification.tier_label,
+        entities=[{"entity_type": e.entity_type, "tier": e.tier} for e in classification.entities_detected],
+        latency_ms=classification_latency_ms,
+        detection_method=classification.detection_method,
+    )
 
     logger.info(
         "Classification result",
@@ -108,6 +141,9 @@ async def inference(
     
     routing_decision = route_request(classification, override)
     routing_latency_ms = (time.perf_counter() - routing_start) * 1000
+    
+    # Record routing metrics
+    record_routing_latency(routing_latency_ms)
 
     logger.info(
         "Routing decision",
@@ -120,31 +156,39 @@ async def inference(
     # Generate response using routed backend
     inference_start = time.perf_counter()
     
-    # Determine if we can actually route to cloud
-    actual_route = routing_decision.route
-    if routing_decision.route == "cloud" and not manager.has_healthy_cloud_backends:
-        logger.warning(
-            "Cloud route requested but no cloud backends available, falling back to local",
-            request_id=request_id,
-        )
-        actual_route = "local"
+    # Track in-progress requests
+    backend_type = "local" if routing_decision.route == "local" else "cloud"
+    REQUESTS_IN_PROGRESS.labels(backend=backend_type).inc()
+    
+    try:
+        # Determine if we can actually route to cloud
+        actual_route = routing_decision.route
+        if routing_decision.route == "cloud" and not manager.has_healthy_cloud_backends:
+            logger.warning(
+                "Cloud route requested but no cloud backends available, falling back to local",
+                request_id=request_id,
+            )
+            actual_route = "local"
+            record_fallback("cloud", "local", "no_healthy_backends")
 
-    if actual_route == "cloud":
-        result, backend, final_route = await manager.generate_routed(
-            messages=messages,
-            route="cloud",
-            model=request.model if request.model not in ("auto", "local", "cloud") else None,
-            max_tokens=request.max_tokens,
-            temperature=request.temperature,
-        )
-    else:
-        result, backend = await manager.generate(
-            messages=messages,
-            model=request.model if request.model not in ("auto", "local", "cloud") else None,
-            max_tokens=request.max_tokens,
-            temperature=request.temperature,
-        )
-        final_route = "local"
+        if actual_route == "cloud":
+            result, backend, final_route = await manager.generate_routed(
+                messages=messages,
+                route="cloud",
+                model=request.model if request.model not in ("auto", "local", "cloud") else None,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature,
+            )
+        else:
+            result, backend = await manager.generate(
+                messages=messages,
+                model=request.model if request.model not in ("auto", "local", "cloud") else None,
+                max_tokens=request.max_tokens,
+                temperature=request.temperature,
+            )
+            final_route = "local"
+    finally:
+        REQUESTS_IN_PROGRESS.labels(backend=backend_type).dec()
     
     inference_latency_ms = (time.perf_counter() - inference_start) * 1000
 
@@ -154,6 +198,7 @@ async def inference(
             request_id=request_id,
             error=result.error,
         )
+        record_error("inference_failed", backend.endpoint_name if backend else "unknown")
         raise HTTPException(
             status_code=503,
             detail=ErrorResponse(
@@ -182,18 +227,78 @@ async def inference(
 
     total_latency_ms = (time.perf_counter() - start_time) * 1000
 
+    # Determine backend type for response
+    endpoint_name = backend.endpoint_name if backend else "unknown"
+    backend_type_str = "ollama" if final_route == "local" else endpoint_name
+
+    # Record all telemetry metrics
+    record_request(
+        route=final_route,
+        backend=backend_type_str,
+        endpoint=endpoint_name,
+        tier=classification.tier,
+        status="success",
+    )
+    
+    record_latencies(
+        backend=backend_type_str,
+        endpoint=endpoint_name,
+        model=result.model,
+        ttft_ms=result.ttft_ms,
+        itl_ms=itl_p50,
+        tpot_ms=tpot_ms,
+        total_ms=inference_latency_ms,
+    )
+    
+    record_tokens(
+        backend=backend_type_str,
+        endpoint=endpoint_name,
+        prompt_tokens=result.prompt_tokens,
+        completion_tokens=result.completion_tokens,
+        tokens_per_second=tokens_per_second,
+        model=result.model,
+    )
+    
+    if result.cost_usd:
+        record_cost(
+            backend=backend_type_str,
+            model=result.model,
+            cost_usd=result.cost_usd,
+            savings_usd=0.0,  # TODO: Calculate vs cloud baseline
+        )
+
+    # =========================================================================
+    # Shadow Mode: Run local inference in background for cloud requests
+    # =========================================================================
+    if (
+        _shadow_runner is not None
+        and final_route == "cloud"
+        and _shadow_runner.should_shadow(classification.tier)
+    ):
+        logger.debug(
+            "Triggering shadow mode",
+            request_id=request_id,
+            tier=classification.tier,
+        )
+        await _shadow_runner.run_shadow(
+            request_id=request_id,
+            messages=messages,
+            cloud_result=result,
+            cloud_backend_name=endpoint_name,
+            cloud_latency_ms=inference_latency_ms,
+            privacy_tier=classification.tier,
+            backend_manager=manager,
+        )
+
     logger.info(
         "Inference completed",
         request_id=request_id,
-        endpoint=backend.endpoint_name if backend else None,
+        endpoint=endpoint_name,
         model=result.model,
         ttft_ms=result.ttft_ms,
         total_latency_ms=total_latency_ms,
         tokens=result.completion_tokens,
     )
-
-    # Determine backend type for response
-    backend_type = "ollama" if final_route == "local" else backend.endpoint_name if backend else "unknown"
 
     return InferenceResponse(
         id=request_id,
@@ -211,8 +316,8 @@ async def inference(
         ),
         sentinel=SentinelMetadata(
             route=final_route,
-            backend=backend_type,
-            endpoint=backend.endpoint_name if backend else None,
+            backend=backend_type_str,
+            endpoint=endpoint_name,
             model=result.model,
             privacy_tier=classification.tier,
             privacy_tier_label=classification.tier_label,
@@ -330,3 +435,105 @@ async def classify_text(request: ClassifyRequest) -> ClassifyResponse:
         detection_method=result.detection_method,
         detection_latency_ms=result.detection_latency_ms,
     )
+
+
+# ============== ADMIN ENDPOINTS ==============
+
+class ShadowMetricsResponse(BaseModel):
+    """Response for shadow mode metrics."""
+    
+    enabled: bool = Field(description="Whether shadow mode is enabled")
+    total_shadows: int = Field(description="Total shadow comparisons run")
+    successful_shadows: int = Field(description="Successful shadow comparisons")
+    quality_matches: int = Field(description="Comparisons where local matched cloud quality")
+    quality_match_rate: float = Field(description="Quality match rate (0.0 to 1.0)")
+    total_cost_savings_usd: float = Field(description="Potential cost savings from shadow data")
+    pending_tasks: int = Field(description="Currently running shadow tasks")
+    stored_results: int = Field(description="Number of stored shadow results")
+
+
+class ShadowResultResponse(BaseModel):
+    """A single shadow comparison result."""
+    
+    shadow_id: str
+    request_id: str
+    timestamp: str
+    cloud_model: str
+    local_model: str
+    cloud_latency_ms: float
+    local_latency_ms: float
+    latency_diff_ms: float
+    local_is_faster: bool
+    similarity_score: float | None
+    is_quality_match: bool
+    privacy_tier: int
+    cost_savings_usd: float
+
+
+@router.get("/admin/shadow/metrics", response_model=ShadowMetricsResponse)
+async def get_shadow_metrics() -> ShadowMetricsResponse:
+    """Get shadow mode metrics and statistics.
+    
+    Returns aggregate statistics about shadow mode comparisons,
+    including quality match rates and cost savings.
+    """
+    if _shadow_runner is None:
+        return ShadowMetricsResponse(
+            enabled=False,
+            total_shadows=0,
+            successful_shadows=0,
+            quality_matches=0,
+            quality_match_rate=0.0,
+            total_cost_savings_usd=0.0,
+            pending_tasks=0,
+            stored_results=0,
+        )
+    
+    metrics = _shadow_runner.get_metrics()
+    
+    return ShadowMetricsResponse(
+        enabled=_shadow_runner.config.enabled,
+        total_shadows=metrics["total_shadows"],
+        successful_shadows=metrics["successful_shadows"],
+        quality_matches=metrics["quality_matches"],
+        quality_match_rate=metrics["quality_match_rate"],
+        total_cost_savings_usd=metrics["total_cost_savings_usd"],
+        pending_tasks=metrics["pending_tasks"],
+        stored_results=metrics["stored_results"],
+    )
+
+
+@router.get("/admin/shadow/results", response_model=list[ShadowResultResponse])
+async def get_shadow_results(limit: int = 10) -> list[ShadowResultResponse]:
+    """Get recent shadow comparison results.
+    
+    Returns the most recent shadow comparisons with detailed
+    metrics about quality and latency differences.
+    
+    Args:
+        limit: Maximum number of results to return (default: 10, max: 100)
+    """
+    if _shadow_runner is None:
+        return []
+    
+    limit = min(limit, 100)  # Cap at 100
+    results = _shadow_runner.get_recent_results(limit=limit)
+    
+    return [
+        ShadowResultResponse(
+            shadow_id=r["shadow_id"],
+            request_id=r["request_id"],
+            timestamp=r["timestamp"],
+            cloud_model=r["cloud_model"],
+            local_model=r["local_model"],
+            cloud_latency_ms=r["cloud_latency_ms"],
+            local_latency_ms=r["local_latency_ms"],
+            latency_diff_ms=r["latency_diff_ms"],
+            local_is_faster=r["local_is_faster"],
+            similarity_score=r["similarity_score"],
+            is_quality_match=r["is_quality_match"],
+            privacy_tier=r["privacy_tier"],
+            cost_savings_usd=r.get("cost_savings_usd", 0.0),
+        )
+        for r in results
+    ]

@@ -1,6 +1,6 @@
 """API module."""
 
-from sentinel.api.routes import router, set_backend_manager
+from sentinel.api.routes import router, set_backend_manager, set_shadow_runner
 from sentinel.api.schemas import (
     Choice,
     ErrorResponse,
@@ -15,6 +15,7 @@ from sentinel.api.schemas import (
 __all__ = [
     "router",
     "set_backend_manager",
+    "set_shadow_runner",
     "Choice",
     "ErrorResponse",
     "HealthResponse",

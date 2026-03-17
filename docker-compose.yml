@@ -5,8 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"           # API
-      - "9090:9090"           # Metrics
+      - "8000:8000"           # API + Metrics
     environment:
       - SENTINEL_ENV=development
       - SENTINEL_DEBUG=true
