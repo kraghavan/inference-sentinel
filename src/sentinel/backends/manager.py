@@ -15,12 +15,26 @@ logger = structlog.get_logger()
 class BackendManager:
     """Manages multiple inference backends with health checking and selection."""
 
-    def __init__(self, config: LocalBackendsConfig):
+    def __init__(
+        self,
+        config: LocalBackendsConfig,
+        cloud_selection_strategy: Literal["primary_fallback", "round_robin"] = "primary_fallback",
+        cloud_primary: str = "anthropic",
+        cloud_fallback: str = "google",
+    ):
         self._config = config
         self._local_backends: dict[str, OllamaBackend] = {}
         self._cloud_backends: dict[str, BaseBackend] = {}
         self._health_status: dict[str, bool] = {}
-        self._round_robin_index: int = 0
+        
+        # Cloud selection config
+        self._cloud_selection_strategy = cloud_selection_strategy
+        self._cloud_primary = cloud_primary
+        self._cloud_fallback = cloud_fallback
+        
+        # Round-robin state
+        self._cloud_rr_index: int = 0
+        self._local_rr_index: int = 0
         self._lock = asyncio.Lock()
 
     async def initialize(self) -> None:
@@ -144,10 +158,14 @@ class BackendManager:
         return healthy[0]
 
     def select_cloud_backend(self, preferred: str | None = None) -> BaseBackend | None:
-        """Select a cloud backend.
+        """Select a cloud backend based on configured strategy.
+
+        Strategies:
+        - primary_fallback: Try primary, then fallback
+        - round_robin: Alternate between healthy backends
 
         Args:
-            preferred: Preferred backend name (e.g., "anthropic").
+            preferred: Override to use specific backend (bypasses strategy).
 
         Returns:
             A healthy cloud backend or None.
@@ -158,14 +176,66 @@ class BackendManager:
             logger.warning("No healthy cloud backends available")
             return None
 
-        # If preferred backend is healthy, use it
+        # If preferred backend specified and healthy, use it
         if preferred and preferred in self._cloud_backends:
             backend = self._cloud_backends[preferred]
             if self._health_status.get(preferred, False):
+                logger.debug("Using preferred cloud backend", backend=preferred)
                 return backend
 
-        # Otherwise return first healthy one
-        return healthy[0]
+        # Apply selection strategy
+        if self._cloud_selection_strategy == "round_robin":
+            return self._select_cloud_round_robin(healthy)
+        else:
+            # primary_fallback (default)
+            return self._select_cloud_primary_fallback(healthy)
+
+    def _select_cloud_primary_fallback(
+        self, healthy: list[BaseBackend]
+    ) -> BaseBackend | None:
+        """Select cloud backend using primary/fallback strategy."""
+        # Check if primary is healthy
+        if self._cloud_primary in self._cloud_backends:
+            primary = self._cloud_backends[self._cloud_primary]
+            if primary in healthy:
+                logger.debug("Using primary cloud backend", backend=self._cloud_primary)
+                return primary
+
+        # Check if fallback is healthy
+        if self._cloud_fallback in self._cloud_backends:
+            fallback = self._cloud_backends[self._cloud_fallback]
+            if fallback in healthy:
+                logger.debug(
+                    "Primary unavailable, using fallback",
+                    primary=self._cloud_primary,
+                    fallback=self._cloud_fallback,
+                )
+                return fallback
+
+        # Return first healthy as last resort
+        return healthy[0] if healthy else None
+
+    def _select_cloud_round_robin(
+        self, healthy: list[BaseBackend]
+    ) -> BaseBackend | None:
+        """Select cloud backend using round-robin strategy."""
+        if not healthy:
+            return None
+
+        # Get next backend in rotation
+        selected = healthy[self._cloud_rr_index % len(healthy)]
+        
+        # Advance index for next call
+        self._cloud_rr_index = (self._cloud_rr_index + 1) % len(healthy)
+        
+        logger.debug(
+            "Round-robin cloud selection",
+            selected=selected.endpoint_name,
+            index=self._cloud_rr_index,
+            healthy_count=len(healthy),
+        )
+        
+        return selected
 
     async def generate(
         self,
