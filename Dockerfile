@@ -22,7 +22,7 @@ FROM base AS builder
 RUN pip install --upgrade pip hatchling
 
 # Copy project files
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
 COPY src/ src/
 
 # Build wheel

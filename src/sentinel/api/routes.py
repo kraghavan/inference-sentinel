@@ -2,7 +2,7 @@
 
 import time
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,6 +20,7 @@ from sentinel.api.schemas import (
 )
 from sentinel.backends import BackendManager
 from sentinel.classification import classify_messages, ClassificationResult
+from sentinel.routing import route as route_request, RoutingDecision
 
 logger = structlog.get_logger()
 
@@ -99,23 +100,52 @@ async def inference(
         latency_ms=round(classification_latency_ms, 2),
     )
 
-    # Routing decision (Phase 1: always local, but log what we would do)
+    # Phase 2: Route based on classification
     routing_start = time.perf_counter()
-    # TODO Phase 2: Implement actual routing based on classification
-    # For now, just determine what route WOULD be taken
-    intended_route = "local" if classification.requires_local else "cloud"
-    if request.routing_override:
-        intended_route = request.routing_override
+    override: Literal["local", "cloud"] | None = None
+    if request.routing_override in ("local", "cloud"):
+        override = request.routing_override  # type: ignore
+    
+    routing_decision = route_request(classification, override)
     routing_latency_ms = (time.perf_counter() - routing_start) * 1000
 
-    # Generate response
-    inference_start = time.perf_counter()
-    result, backend = await manager.generate(
-        messages=messages,
-        model=request.model if request.model not in ("auto", "local", "cloud") else None,
-        max_tokens=request.max_tokens,
-        temperature=request.temperature,
+    logger.info(
+        "Routing decision",
+        request_id=request_id,
+        route=routing_decision.route,
+        reason=routing_decision.reason,
+        override_applied=routing_decision.override_applied,
     )
+
+    # Generate response using routed backend
+    inference_start = time.perf_counter()
+    
+    # Determine if we can actually route to cloud
+    actual_route = routing_decision.route
+    if routing_decision.route == "cloud" and not manager.has_healthy_cloud_backends:
+        logger.warning(
+            "Cloud route requested but no cloud backends available, falling back to local",
+            request_id=request_id,
+        )
+        actual_route = "local"
+
+    if actual_route == "cloud":
+        result, backend, final_route = await manager.generate_routed(
+            messages=messages,
+            route="cloud",
+            model=request.model if request.model not in ("auto", "local", "cloud") else None,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+        )
+    else:
+        result, backend = await manager.generate(
+            messages=messages,
+            model=request.model if request.model not in ("auto", "local", "cloud") else None,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+        )
+        final_route = "local"
+    
     inference_latency_ms = (time.perf_counter() - inference_start) * 1000
 
     if result.error:
@@ -162,6 +192,9 @@ async def inference(
         tokens=result.completion_tokens,
     )
 
+    # Determine backend type for response
+    backend_type = "ollama" if final_route == "local" else backend.endpoint_name if backend else "unknown"
+
     return InferenceResponse(
         id=request_id,
         model=result.model,
@@ -177,8 +210,8 @@ async def inference(
             total_tokens=result.prompt_tokens + result.completion_tokens,
         ),
         sentinel=SentinelMetadata(
-            route="local",  # Phase 1: still always local, but classification is active
-            backend="ollama",
+            route=final_route,
+            backend=backend_type,
             endpoint=backend.endpoint_name if backend else None,
             model=result.model,
             privacy_tier=classification.tier,
@@ -192,7 +225,7 @@ async def inference(
             itl_p95_ms=itl_p95,
             tpot_ms=tpot_ms,
             tokens_per_second=tokens_per_second,
-            cost_usd=0.0,  # Local inference is free
+            cost_usd=result.cost_usd if result.cost_usd else 0.0,
             cost_savings_usd=0.0,  # TODO: Calculate vs cloud baseline
         ),
     )

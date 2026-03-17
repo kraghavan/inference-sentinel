@@ -1,32 +1,42 @@
 """Ollama backend adapter for local inference."""
 
 import time
-from typing import AsyncIterator
+from typing import AsyncIterator, Literal
 
 import httpx
 import structlog
 
-from sentinel.backends.base import BaseBackend, InferenceResult, StreamChunk
+from sentinel.backends.base import LocalBackend, InferenceResult, StreamChunk
 from sentinel.config import LocalEndpoint
 
 logger = structlog.get_logger()
 
 
-class OllamaBackend(BaseBackend):
-    """Backend adapter for Ollama local inference."""
+class OllamaBackend(LocalBackend):
+    """Backend adapter for Ollama local inference.
+    
+    Ollama is a lightweight framework for running LLMs locally.
+    Supports models like Llama, Gemma, Mistral, Phi, etc.
+    
+    Features:
+    - Automatic model management (pull, list, delete)
+    - Metal/CUDA/ROCm acceleration
+    - OpenAI-compatible API
+    """
 
     def __init__(self, endpoint: LocalEndpoint, timeout: float = 120.0):
         self._endpoint = endpoint
         self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
-
-    @property
-    def name(self) -> str:
-        return f"ollama:{self._endpoint.name}"
+        self._healthy = False
 
     @property
     def endpoint_name(self) -> str:
         return self._endpoint.name
+
+    @property
+    def is_healthy(self) -> bool:
+        return self._healthy
 
     @property
     def base_url(self) -> str:
@@ -35,6 +45,20 @@ class OllamaBackend(BaseBackend):
     @property
     def model(self) -> str:
         return self._endpoint.model
+
+    async def initialize(self) -> None:
+        """Initialize the HTTP client and verify connectivity."""
+        self._client = httpx.AsyncClient(
+            base_url=self._endpoint.base_url,
+            timeout=httpx.Timeout(self._timeout, connect=10.0),
+        )
+        self._healthy = await self.health_check()
+        if self._healthy:
+            logger.info(
+                "Ollama backend initialized",
+                endpoint=self._endpoint.name,
+                model=self._endpoint.model,
+            )
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the HTTP client."""
@@ -57,6 +81,7 @@ class OllamaBackend(BaseBackend):
         model: str | None = None,
         max_tokens: int = 1024,
         temperature: float = 0.7,
+        **kwargs,
     ) -> InferenceResult:
         """Generate a completion using Ollama's chat API."""
         client = await self._get_client()
@@ -129,6 +154,7 @@ class OllamaBackend(BaseBackend):
                 itl_values_ms=itl_values if itl_values else None,
                 total_latency_ms=total_latency_ms,
                 finish_reason="stop",
+                cost_usd=0.0,  # Local inference is free
             )
 
         except httpx.HTTPStatusError as e:
@@ -140,7 +166,7 @@ class OllamaBackend(BaseBackend):
                 completion_tokens=0,
                 total_latency_ms=(time.perf_counter() - start_time) * 1000,
                 finish_reason="error",
-                error=f"HTTP {e.response.status_code}: {e.response.text}",
+                error=f"HTTP {e.response.status_code}: {str(e)}",
             )
         except httpx.RequestError as e:
             logger.error("Ollama request error", error=str(e))
@@ -160,6 +186,7 @@ class OllamaBackend(BaseBackend):
         model: str | None = None,
         max_tokens: int = 1024,
         temperature: float = 0.7,
+        **kwargs,
     ) -> AsyncIterator[StreamChunk]:
         """Generate a streaming completion."""
         client = await self._get_client()
@@ -167,6 +194,7 @@ class OllamaBackend(BaseBackend):
 
         start_time = time.perf_counter()
         is_first = True
+        token_index = 0
 
         try:
             async with client.stream(
@@ -197,11 +225,13 @@ class OllamaBackend(BaseBackend):
                         if token_content:
                             yield StreamChunk(
                                 content=token_content,
+                                token_index=token_index,
                                 is_first=is_first,
                                 is_last=chunk.get("done", False),
                                 timestamp_ms=current_time,
                             )
                             is_first = False
+                            token_index += 1
 
                     if chunk.get("done", False):
                         break
@@ -213,6 +243,7 @@ class OllamaBackend(BaseBackend):
                 is_first=is_first,
                 is_last=True,
                 timestamp_ms=(time.perf_counter() - start_time) * 1000,
+                error=str(e),
             )
 
     async def health_check(self) -> bool:
@@ -239,6 +270,7 @@ class OllamaBackend(BaseBackend):
                     available=models,
                 )
 
+            self._healthy = model_available
             return model_available
 
         except Exception as e:
@@ -247,6 +279,7 @@ class OllamaBackend(BaseBackend):
                 endpoint=self._endpoint.name,
                 error=str(e),
             )
+            self._healthy = False
             return False
 
     async def list_models(self) -> list[str]:
@@ -262,3 +295,33 @@ class OllamaBackend(BaseBackend):
         except Exception as e:
             logger.error("Failed to list models", error=str(e))
             return []
+
+    async def pull_model(self, model: str) -> bool:
+        """Pull a model from Ollama registry."""
+        try:
+            client = await self._get_client()
+            response = await client.post(
+                "/api/pull",
+                json={"name": model},
+                timeout=600.0,  # Model downloads can take a while
+            )
+            response.raise_for_status()
+            logger.info("Model pulled successfully", model=model)
+            return True
+        except Exception as e:
+            logger.error("Failed to pull model", model=model, error=str(e))
+            return False
+
+    async def get_model_info(self, model: str) -> dict:
+        """Get information about a specific model."""
+        try:
+            client = await self._get_client()
+            response = await client.post(
+                "/api/show",
+                json={"name": model},
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error("Failed to get model info", model=model, error=str(e))
+            return {}

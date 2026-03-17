@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from sentinel.api import router, set_backend_manager
-from sentinel.backends import BackendManager
+from sentinel.backends import BackendManager, AnthropicBackend, GoogleBackend
 from sentinel.config import LocalBackendsConfig, LocalEndpoint, get_settings
 
 # Configure structured logging
@@ -47,7 +47,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # Build local backends config
-    # For Phase 0, we configure endpoints from environment or defaults
     local_config = settings.local
 
     # If no endpoints configured, add a default local one
@@ -58,7 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                     name="local",
                     host="localhost",
                     port=11434,
-                    model="gemma3:4b",  # Using the model you have
+                    model="gemma3:4b",
                     priority=1,
                 ),
             ],
@@ -70,6 +69,41 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize backend manager
     backend_manager = BackendManager(local_config)
     await backend_manager.initialize()
+
+    # Initialize cloud backends if API keys are provided
+    cloud_config = settings.cloud
+    
+    if cloud_config.anthropic_api_key:
+        logger.info("Initializing Anthropic backend")
+        anthropic_backend = AnthropicBackend(
+            api_key=cloud_config.anthropic_api_key,
+            model=cloud_config.anthropic_model,
+            timeout=cloud_config.timeout_seconds,
+        )
+        backend_manager.add_cloud_backend("anthropic", anthropic_backend)
+    
+    if cloud_config.google_api_key:
+        logger.info("Initializing Google backend")
+        google_backend = GoogleBackend(
+            api_key=cloud_config.google_api_key,
+            model=cloud_config.google_model,
+            timeout=cloud_config.timeout_seconds,
+        )
+        backend_manager.add_cloud_backend("google", google_backend)
+
+    # Initialize cloud backends
+    if backend_manager.has_cloud_backends:
+        await backend_manager.initialize_cloud_backends()
+        logger.info(
+            "Cloud backends initialized",
+            backends=list(backend_manager._cloud_backends.keys()),
+        )
+    else:
+        logger.warning(
+            "No cloud backends configured - all requests will route locally. "
+            "Set ANTHROPIC_API_KEY or GOOGLE_API_KEY to enable cloud routing."
+        )
+
     set_backend_manager(backend_manager)
 
     # Start background health check task

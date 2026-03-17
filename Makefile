@@ -14,9 +14,14 @@ help:
 	@echo "  format         Format code (ruff)"
 	@echo "  typecheck      Run type checker (mypy)"
 	@echo "  run            Run the application locally"
-	@echo "  docker-build   Build Docker image"
-	@echo "  docker-up      Start all services with Docker Compose"
-	@echo "  docker-down    Stop all services"
+	@echo ""
+	@echo "Docker commands:"
+	@echo "  docker-setup     First-time setup (pulls 3GB model, takes ~5 min)"
+	@echo "  docker-up        Start all services"
+	@echo "  docker-down      Stop all services"
+	@echo "  docker-logs      Follow sentinel logs"
+	@echo "  docker-clean     Stop and remove volumes"
+	@echo ""
 	@echo "  clean          Remove build artifacts"
 
 # Installation
@@ -78,6 +83,17 @@ docker-logs:
 
 docker-logs-all:
 	docker-compose logs -f
+
+docker-ollama-status:
+	docker exec inference-sentinel-ollama-1 ollama list
+
+docker-clean:
+	docker-compose down -v --remove-orphans
+
+docker-setup: docker-up
+	@echo "First-time setup: model download takes 3-5 minutes..."
+	@echo "Run 'docker ps' to check status. Wait for ollama to show 'healthy'."
+	@echo "Then run 'make docker-logs' to see sentinel logs."
 
 # Cleanup
 clean:

@@ -13,9 +13,7 @@ services:
       - SENTINEL_HOST=0.0.0.0
       - SENTINEL_PORT=8000
       # Local backend - use JSON format for list
-      # For Docker Ollama: host=ollama
-      # For Native Ollama (faster, uses GPU): host=host.docker.internal
-      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "ollama-native", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}]'
+      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "ollama-docker", "host": "ollama", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}]'
       # Telemetry
       - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
       - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
@@ -26,11 +24,10 @@ services:
     volumes:
       - ./config:/home/sentinel/app/config:ro
     depends_on:
+      ollama:
+        condition: service_healthy
       prometheus:
         condition: service_started
-      # Note: For hybrid mode (native Ollama), comment out ollama dependency
-      # ollama:
-      #   condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

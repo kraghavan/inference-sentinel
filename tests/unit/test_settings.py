@@ -76,12 +76,36 @@ class TestCloudBackendsConfig:
     """Tests for CloudBackendsConfig."""
 
     def test_default_values(self) -> None:
-        """Test default values."""
-        config = CloudBackendsConfig()
-        assert config.primary == "anthropic"
-        assert config.fallback == "google"
-        assert config.anthropic_api_key is None
-        assert config.google_api_key is None
+        """Test default values (with env vars cleared)."""
+        # Clear API key env vars that would be picked up
+        env_vars_to_clear = ["ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]
+        original_values = {}
+        for key in env_vars_to_clear:
+            if key in os.environ:
+                original_values[key] = os.environ.pop(key)
+
+        try:
+            config = CloudBackendsConfig()
+            assert config.primary == "anthropic"
+            assert config.fallback == "google"
+            assert config.anthropic_api_key is None
+            assert config.google_api_key is None
+        finally:
+            # Restore original env vars
+            os.environ.update(original_values)
+
+    def test_reads_standard_env_vars(self) -> None:
+        """Test that config reads from standard API key env vars."""
+        os.environ["ANTHROPIC_API_KEY"] = "test-anthropic-key"
+        os.environ["GOOGLE_API_KEY"] = "test-google-key"
+
+        try:
+            config = CloudBackendsConfig()
+            assert config.anthropic_api_key == "test-anthropic-key"
+            assert config.google_api_key == "test-google-key"
+        finally:
+            del os.environ["ANTHROPIC_API_KEY"]
+            del os.environ["GOOGLE_API_KEY"]
 
     def test_default_models(self) -> None:
         """Test default model names."""

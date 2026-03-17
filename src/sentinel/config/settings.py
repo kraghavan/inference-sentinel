@@ -38,10 +38,22 @@ class LocalBackendsConfig(BaseSettings):
 class CloudBackendsConfig(BaseSettings):
     """Configuration for cloud inference backends."""
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     primary: Literal["anthropic", "google"] = Field(default="anthropic")
     fallback: Literal["anthropic", "google", "none"] = Field(default="google")
-    anthropic_api_key: str | None = Field(default=None)
-    google_api_key: str | None = Field(default=None)
+    anthropic_api_key: str | None = Field(
+        default=None,
+        validation_alias="ANTHROPIC_API_KEY",
+    )
+    google_api_key: str | None = Field(
+        default=None,
+        validation_alias="GOOGLE_API_KEY",
+    )
     anthropic_model: str = Field(default="claude-sonnet-4-20250514")
     google_model: str = Field(default="gemini-1.5-flash")
     timeout_seconds: float = Field(default=60.0)
