@@ -67,7 +67,7 @@ class HybridResult:
             tier_label=self.tier_label,
             entities_detected=self.entities_detected,
             entity_types=self.entity_types,
-            entity_count=self.entity_count,
+            confidence=1.0,
             detection_method=self.detection_method,
             detection_latency_ms=self.total_latency_ms,
         )
@@ -235,6 +235,7 @@ class HybridClassifier:
                 start_pos=ner_entity.start_pos,
                 end_pos=ner_entity.end_pos,
                 confidence=ner_entity.confidence,
+                pattern_matched=f"NER:{ner_entity.entity_type}",
             ))
             
             if ner_entity.entity_type not in hybrid.entity_types:
