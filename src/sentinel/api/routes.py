@@ -24,6 +24,10 @@ from sentinel.classification import (
     get_hybrid_classifier,
     classify_messages_hybrid,
 )
+from sentinel.controller import (
+    get_controller,
+    ControllerConfig,
+)
 from sentinel.routing import route as route_request, RoutingDecision
 from sentinel.shadow import ShadowRunner, get_shadow_runner
 from sentinel.telemetry import (
@@ -537,3 +541,203 @@ async def get_shadow_results(limit: int = 10) -> list[ShadowResultResponse]:
         )
         for r in results
     ]
+
+
+# =============================================================================
+# Controller Admin Endpoints
+# =============================================================================
+
+class ControllerStatusResponse(BaseModel):
+    """Response model for controller status."""
+    
+    enabled: bool
+    mode: str
+    running: bool
+    last_evaluation: str | None
+    next_evaluation: str | None
+    evaluation_interval_seconds: int
+    total_evaluations: int
+    recommendations: list[dict]
+    tier_metrics: dict[int, dict]
+
+
+class ControllerHistoryResponse(BaseModel):
+    """Response model for controller history."""
+    
+    entries: list[dict]
+    count: int
+
+
+class ReloadResponse(BaseModel):
+    """Response model for config reload."""
+    
+    success: bool
+    message: str
+    reloaded_components: list[str]
+
+
+@router.get("/admin/controller/status", response_model=ControllerStatusResponse)
+async def get_controller_status() -> ControllerStatusResponse:
+    """Get current controller status and recommendations.
+    
+    Returns the controller's current state including:
+    - Whether it's running
+    - Current recommendations per tier
+    - Aggregated metrics per tier
+    - Next evaluation time
+    """
+    controller = get_controller()
+    
+    if controller is None:
+        return ControllerStatusResponse(
+            enabled=False,
+            mode="observe",
+            running=False,
+            last_evaluation=None,
+            next_evaluation=None,
+            evaluation_interval_seconds=60,
+            total_evaluations=0,
+            recommendations=[],
+            tier_metrics={},
+        )
+    
+    status = controller.get_status()
+    return ControllerStatusResponse(
+        enabled=status.enabled,
+        mode=status.mode,
+        running=status.running,
+        last_evaluation=status.last_evaluation.isoformat() if status.last_evaluation else None,
+        next_evaluation=status.next_evaluation.isoformat() if status.next_evaluation else None,
+        evaluation_interval_seconds=status.evaluation_interval_seconds,
+        total_evaluations=status.total_evaluations,
+        recommendations=[r.to_dict() for r in status.recommendations],
+        tier_metrics={k: v.to_dict() for k, v in status.tier_metrics.items()},
+    )
+
+
+@router.get("/admin/controller/history", response_model=ControllerHistoryResponse)
+async def get_controller_history(limit: int = 20) -> ControllerHistoryResponse:
+    """Get controller recommendation history.
+    
+    Returns the most recent evaluation results with recommendations
+    and metrics. Useful for debugging and trend analysis.
+    
+    Args:
+        limit: Maximum number of entries to return (default: 20, max: 100)
+    """
+    controller = get_controller()
+    
+    if controller is None:
+        return ControllerHistoryResponse(entries=[], count=0)
+    
+    limit = min(limit, 100)
+    history = controller.get_history(limit=limit)
+    
+    return ControllerHistoryResponse(
+        entries=history,
+        count=len(history),
+    )
+
+
+@router.post("/admin/controller/evaluate")
+async def force_controller_evaluate() -> dict:
+    """Force an immediate controller evaluation.
+    
+    Triggers the controller to evaluate metrics and generate
+    recommendations immediately, without waiting for the next
+    scheduled evaluation.
+    
+    Returns the evaluation results.
+    """
+    controller = get_controller()
+    
+    if controller is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Controller not initialized"
+        )
+    
+    result = await controller.force_evaluate()
+    return result
+
+
+@router.post("/admin/reload", response_model=ReloadResponse)
+async def reload_config() -> ReloadResponse:
+    """Hot-reload configuration from routing.yaml.
+    
+    Reloads configuration for:
+    - Controller thresholds
+    - Shadow mode settings
+    - Cloud selection strategy
+    
+    Does NOT reload:
+    - Local backend endpoints (requires restart)
+    - API keys (requires restart)
+    
+    Note: This endpoint reads from config/routing.yaml in the
+    current working directory.
+    """
+    import yaml
+    from pathlib import Path
+    
+    reloaded = []
+    
+    try:
+        # Load routing.yaml
+        config_path = Path("config/routing.yaml")
+        if not config_path.exists():
+            return ReloadResponse(
+                success=False,
+                message="config/routing.yaml not found",
+                reloaded_components=[],
+            )
+        
+        with open(config_path) as f:
+            config = yaml.safe_load(f)
+        
+        # Reload controller config
+        controller = get_controller()
+        if controller and "controller" in config:
+            controller_data = config["controller"]
+            new_config = ControllerConfig.from_dict(controller_data)
+            controller.update_config(new_config)
+            reloaded.append("controller")
+            logger.info("Controller config reloaded", config=controller_data)
+        
+        # Reload shadow config
+        shadow_runner = _shadow_runner
+        if shadow_runner and "shadow" in config:
+            shadow_data = config["shadow"]
+            # Update sample rate and tiers
+            if "sample_rate" in shadow_data:
+                shadow_runner._sample_rate = shadow_data["sample_rate"]
+            if "shadow_tiers" in shadow_data:
+                shadow_runner._shadow_tiers = set(shadow_data["shadow_tiers"])
+            reloaded.append("shadow")
+            logger.info("Shadow config reloaded", config=shadow_data)
+        
+        # Reload cloud selection (if backend manager available)
+        if _backend_manager and "cloud" in config:
+            cloud_data = config["cloud"]
+            if "selection_strategy" in cloud_data:
+                _backend_manager._cloud_selection_strategy = cloud_data["selection_strategy"]
+            if "primary" in cloud_data:
+                _backend_manager._cloud_primary = cloud_data["primary"]
+            if "fallback" in cloud_data:
+                _backend_manager._cloud_fallback = cloud_data["fallback"]
+            reloaded.append("cloud_selection")
+            logger.info("Cloud selection config reloaded", config=cloud_data)
+        
+        return ReloadResponse(
+            success=True,
+            message=f"Reloaded {len(reloaded)} component(s)",
+            reloaded_components=reloaded,
+        )
+    
+    except Exception as e:
+        logger.error("Config reload failed", error=str(e))
+        return ReloadResponse(
+            success=False,
+            message=f"Reload failed: {str(e)}",
+            reloaded_components=reloaded,
+        )

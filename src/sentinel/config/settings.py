@@ -156,6 +156,34 @@ class CloudSelectionConfig(BaseSettings):
     )
 
 
+class ControllerSettings(BaseSettings):
+    """Configuration for closed-loop controller."""
+    
+    enabled: bool = Field(default=False, description="Enable the controller")
+    mode: Literal["observe", "auto"] = Field(
+        default="observe",
+        description="Controller mode: observe (log only) or auto (apply changes)"
+    )
+    evaluation_interval_seconds: int = Field(
+        default=60,
+        description="How often to evaluate metrics"
+    )
+    window_seconds: int = Field(
+        default=300,
+        description="Rolling window for metric aggregation (5 min default)"
+    )
+    drift_threshold: float = Field(
+        default=0.10,
+        ge=0.0,
+        le=1.0,
+        description="Alert if similarity drops by this percentage"
+    )
+    cost_savings_threshold_usd: float = Field(
+        default=50.0,
+        description="Minimum cost savings to recommend routing change"
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -185,6 +213,9 @@ class Settings(BaseSettings):
     
     # Shadow mode
     shadow: ShadowConfig = Field(default_factory=ShadowConfig)
+    
+    # Closed-loop controller
+    controller: ControllerSettings = Field(default_factory=ControllerSettings)
 
     # Telemetry
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)

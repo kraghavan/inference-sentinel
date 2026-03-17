@@ -116,3 +116,43 @@ performance:
   
   # Backend selection strategy for local
   local_selection_strategy: priority  # priority, round_robin, latency_best
+
+# =============================================================================
+# Closed-Loop Controller Configuration
+# =============================================================================
+controller:
+  # Enable the controller
+  enabled: false
+  
+  # Controller mode
+  # Options:
+  #   - observe: Log recommendations only (no auto-action)
+  #   - auto: (future) Automatically apply routing changes
+  mode: observe
+  
+  # Evaluation interval (how often to check metrics)
+  evaluation_interval_seconds: 60
+  
+  # Rolling window for metric aggregation
+  window_seconds: 300  # 5 minutes
+  
+  # Per-tier quality thresholds
+  # These determine when the controller recommends routing to local
+  thresholds:
+    tier_0:
+      # Minimum average similarity score to recommend local routing
+      min_similarity: 0.85
+      # Minimum samples required before making recommendations
+      min_samples: 100
+    tier_1:
+      min_similarity: 0.80
+      min_samples: 100
+  
+  # Alert configuration
+  alerts:
+    # Alert if similarity drops by this percentage from previous evaluation
+    drift_threshold: 0.10  # 10%
+    
+    # Minimum cost savings (USD) to recommend routing change
+    # Even if quality threshold is met, won't recommend if savings are minimal
+    cost_savings_threshold_usd: 50.0
