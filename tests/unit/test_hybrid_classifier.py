@@ -49,6 +49,7 @@ class TestHybridResult:
                     start_pos=0,
                     end_pos=10,
                     confidence=1.0,
+                    pattern_matched=r"[\w\.-]+@[\w\.-]+",
                 )
             ],
             entity_types=["email"],
@@ -77,7 +78,6 @@ class TestHybridClassifier:
             tier_label="PUBLIC",
             entities_detected=[],
             entity_types=[],
-            entity_count=0,
         )
         return mock
     
@@ -132,10 +132,10 @@ class TestHybridClassifier:
                     start_pos=0,
                     end_pos=11,
                     confidence=1.0,
+                    pattern_matched=r"\d{3}-\d{2}-\d{4}",
                 )
             ],
             entity_types=["ssn"],
-            entity_count=1,
         )
         
         classifier = HybridClassifier(
@@ -202,10 +202,10 @@ class TestHybridClassifier:
                     start_pos=0,
                     end_pos=15,
                     confidence=1.0,
+                    pattern_matched=r"[\w\.-]+@[\w\.-]+",
                 )
             ],
             entity_types=["email"],
-            entity_count=1,
         )
         
         mock_ner_classifier.classify = AsyncMock(return_value=NERResult(

@@ -2,9 +2,10 @@
 
 import pytest
 from unittest.mock import MagicMock, AsyncMock
+from typing import AsyncIterator, Literal
 
 from sentinel.backends.manager import BackendManager
-from sentinel.backends.base import BaseBackend
+from sentinel.backends.base import BaseBackend, InferenceResult, StreamChunk
 from sentinel.config import LocalBackendsConfig
 
 
@@ -13,30 +14,53 @@ class MockBackend(BaseBackend):
     
     def __init__(self, name: str):
         self._name = name
+        self._healthy = True
     
     @property
     def endpoint_name(self) -> str:
         return self._name
     
     @property
-    def is_local(self) -> bool:
-        return False
+    def backend_type(self) -> Literal["local", "cloud"]:
+        return "cloud"
     
     @property
-    def cost_per_token(self) -> float:
-        return 0.001
+    def is_healthy(self) -> bool:
+        return self._healthy
     
     async def initialize(self) -> None:
         pass
     
-    async def health_check(self) -> bool:
-        return True
-    
-    async def generate(self, messages, model=None, max_tokens=1024, temperature=0.7):
+    async def close(self) -> None:
         pass
     
-    async def list_models(self):
-        return []
+    async def health_check(self) -> bool:
+        return self._healthy
+    
+    async def generate(
+        self,
+        messages: list[dict],
+        model: str | None = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.7,
+        **kwargs,
+    ) -> InferenceResult:
+        return InferenceResult(
+            content="mock response",
+            model=model or "mock-model",
+            prompt_tokens=10,
+            completion_tokens=20,
+        )
+    
+    async def generate_stream(
+        self,
+        messages: list[dict],
+        model: str | None = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.7,
+        **kwargs,
+    ) -> AsyncIterator[StreamChunk]:
+        yield StreamChunk(content="mock", is_first=True, is_last=True)
 
 
 class TestCloudSelectionStrategies:
