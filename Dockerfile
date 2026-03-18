@@ -1,59 +1,37 @@
-# syntax=docker/dockerfile:1
+# Dockerfile for inference-sentinel
+FROM python:3.12-slim
 
-FROM python:3.12-slim AS base
-
-# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PYTHONPATH=/app/src
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Builder stage
-FROM base AS builder
+RUN pip install --upgrade pip && \
+    pip install \
+    fastapi>=0.109.0 \
+    uvicorn>=0.27.0 \
+    pydantic>=2.5.0 \
+    pydantic-settings>=2.1.0 \
+    httpx>=0.26.0 \
+    structlog>=24.1.0 \
+    prometheus-client>=0.19.0 \
+    opentelemetry-api>=1.22.0 \
+    opentelemetry-sdk>=1.22.0 \
+    opentelemetry-exporter-otlp>=1.22.0 \
+    opentelemetry-instrumentation-fastapi>=0.43b0 \
+    pyyaml>=6.0 \
+    anthropic>=0.18.0 \
+    google-generativeai>=0.4.0 \
+    numpy>=1.24.0 \
+    pytest>=8.0.0 \
+    pytest-asyncio>=0.23.0
 
-# Install build dependencies
-RUN pip install --upgrade pip hatchling
+EXPOSE 8000
 
-# Copy project files
-COPY pyproject.toml README.md ./
-COPY src/ src/
-
-# Build wheel
-RUN pip wheel --no-deps --wheel-dir /wheels .
-
-# Runtime stage
-FROM base AS runtime
-
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash sentinel
-USER sentinel
-WORKDIR /home/sentinel/app
-
-# Copy wheels from builder
-COPY --from=builder /wheels /wheels
-
-# Install the package
-RUN pip install --user /wheels/*.whl
-
-# Add local bin to PATH
-ENV PATH="/home/sentinel/.local/bin:$PATH"
-
-# Copy config directory
-COPY --chown=sentinel:sentinel config/ config/
-
-# Expose ports
-EXPOSE 8000 9090
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Run the application
-CMD ["python", "-m", "sentinel.main"]
+CMD ["uvicorn", "sentinel.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/src"]

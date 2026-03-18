@@ -6,7 +6,7 @@ No Prometheus dependency - pure Python state access.
 
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from statistics import mean, median, quantiles
 from typing import TYPE_CHECKING
 
@@ -14,6 +14,11 @@ from sentinel.controller.recommendations import TierMetrics
 
 if TYPE_CHECKING:
     from sentinel.shadow import ShadowRunner
+
+
+def _utcnow() -> datetime:
+    """Return current UTC time as timezone-aware datetime."""
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -25,7 +30,7 @@ class MetricsSample:
     latency_diff_ms: float  # Negative = local faster
     cost_savings_usd: float
     is_quality_match: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=_utcnow)
 
 
 class MetricsReader:
@@ -75,7 +80,7 @@ class MetricsReader:
             TierMetrics with aggregated statistics
         """
         window = window_seconds or self._window_seconds
-        cutoff = datetime.utcnow() - timedelta(seconds=window)
+        cutoff = _utcnow() - timedelta(seconds=window)
         
         # Collect samples from shadow runner or internal storage
         samples = self._collect_samples(tier, cutoff)
@@ -125,7 +130,7 @@ class MetricsReader:
             Dict mapping tier number to TierMetrics
         """
         window = window_seconds or self._window_seconds
-        cutoff = datetime.utcnow() - timedelta(seconds=window)
+        cutoff = _utcnow() - timedelta(seconds=window)
         
         # Find all tiers with data
         all_samples = self._collect_all_samples(cutoff)
@@ -189,6 +194,14 @@ class MetricsReader:
         for result in results:
             # Check timestamp
             result_time = getattr(result, "timestamp", None)
+            
+            # Parse timestamp if it's a string
+            if isinstance(result_time, str):
+                try:
+                    result_time = datetime.fromisoformat(result_time.replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    result_time = None
+            
             if result_time and result_time < cutoff:
                 continue
             
@@ -209,7 +222,7 @@ class MetricsReader:
                 latency_diff_ms=latency_diff,
                 cost_savings_usd=cost_savings,
                 is_quality_match=is_match,
-                timestamp=result_time or datetime.utcnow(),
+                timestamp=result_time or _utcnow(),
             ))
         
         return samples
@@ -224,6 +237,14 @@ class MetricsReader:
         
         for result in results:
             result_time = getattr(result, "timestamp", None)
+            
+            # Parse timestamp if it's a string
+            if isinstance(result_time, str):
+                try:
+                    result_time = datetime.fromisoformat(result_time.replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    result_time = None
+            
             if result_time and result_time < cutoff:
                 continue
             
@@ -242,7 +263,7 @@ class MetricsReader:
                 latency_diff_ms=latency_diff,
                 cost_savings_usd=cost_savings,
                 is_quality_match=is_match,
-                timestamp=result_time or datetime.utcnow(),
+                timestamp=result_time or _utcnow(),
             ))
         
         return samples

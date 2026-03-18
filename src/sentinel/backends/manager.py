@@ -148,8 +148,8 @@ class BackendManager:
 
         elif strategy == "round_robin":
             async with self._lock:
-                backend = healthy[self._round_robin_index % len(healthy)]
-                self._round_robin_index += 1
+                backend = healthy[self._local_rr_index % len(healthy)]
+                self._local_rr_index += 1
                 return backend
 
         elif strategy == "latency_best":
