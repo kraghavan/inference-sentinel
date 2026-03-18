@@ -30,6 +30,9 @@ services:
       - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
       - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
       - SENTINEL_TELEMETRY__LOG_LEVEL=INFO
+      - SENTINEL_NER__ENABLED=true
+      - SENTINEL_NER__MODEL=fast
+      - SENTINEL_NER__DEVICE=cpu
     depends_on:
       prometheus:
         condition: service_started

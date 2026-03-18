@@ -53,6 +53,11 @@ shadow = [
     "numpy>=1.24.0",
     "sentence-transformers>=2.3.0",
 ]
+benchmark = [
+    "faker>=22.0.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+]
 # All optional features
 all = [
     "anthropic>=0.18.0",
@@ -60,6 +65,8 @@ all = [
     "transformers>=4.37.0",
     "torch>=2.2.0",
     "sentence-transformers>=2.3.0",
+    "faker>=22.0.0",
+    "matplotlib>=3.8.0",
 ]
 
 [project.scripts]
