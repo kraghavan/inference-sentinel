@@ -88,4 +88,8 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --cov=src/sentinel --cov-report=term-missing"
+addopts = "-v --ignore=tests/integration"
+markers = [
+    "integration: marks tests as integration tests (require running services)",
+    "ollama: marks tests that require Ollama to be running",
+]

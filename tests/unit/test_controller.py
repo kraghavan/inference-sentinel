@@ -1,7 +1,7 @@
 """Unit tests for closed-loop controller."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, AsyncMock
 
 from sentinel.controller import (
@@ -196,7 +196,7 @@ class TestMetricsReader:
             latency_diff_ms=100.0,
             cost_savings_usd=0.01,
             is_quality_match=False,
-            timestamp=datetime.utcnow() - timedelta(seconds=120),
+            timestamp=datetime.now(timezone.utc) - timedelta(seconds=120),
         )
         reader.add_sample(old_sample)
         
@@ -207,7 +207,7 @@ class TestMetricsReader:
             latency_diff_ms=-50.0,
             cost_savings_usd=0.02,
             is_quality_match=True,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
         reader.add_sample(new_sample)
         
