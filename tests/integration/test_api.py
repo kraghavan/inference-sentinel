@@ -1,13 +1,14 @@
 """Integration tests for API endpoints.
 
-Note: These tests require Ollama to be running with the configured model.
-Mark tests that require Ollama with @pytest.mark.ollama.
+Note: These tests require the full stack to be running.
+Run with: pytest tests/integration/ -v (requires docker-compose up)
+Skip with: pytest tests/unit/ -v (unit tests only)
 """
 
 import pytest
 from httpx import AsyncClient
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
 
 class TestHealthEndpoint:
