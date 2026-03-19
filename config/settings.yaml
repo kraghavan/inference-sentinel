@@ -38,7 +38,7 @@ cloud:
   primary: anthropic
   fallback: google
   anthropic_model: "claude-sonnet-4-20250514"
-  google_model: "gemini-1.5-flash"
+  google_model: "gemini-2.0-flash"
   timeout_seconds: 60
   # API keys should be set via environment variables:
   # SENTINEL_CLOUD__ANTHROPIC_API_KEY

@@ -178,6 +178,20 @@ class MetricsReader:
         
         return samples
     
+    def _parse_timestamp(self, ts: str | datetime | None) -> datetime | None:
+        """Parse timestamp to datetime, handling various formats."""
+        if ts is None:
+            return None
+        if isinstance(ts, datetime):
+            return ts
+        if isinstance(ts, str):
+            try:
+                # Handle ISO format with Z suffix
+                return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                return None
+        return None
+    
     def _read_from_shadow_runner(
         self, tier: int, cutoff: datetime
     ) -> list[MetricsSample]:
@@ -192,27 +206,23 @@ class MetricsReader:
         results = getattr(self._shadow_runner, "_results", [])
         
         for result in results:
-            # Check timestamp
-            result_time = getattr(result, "timestamp", None)
+            # Parse timestamp safely
+            result_time = self._parse_timestamp(getattr(result, "timestamp", None))
             
-            # Parse timestamp if it's a string
-            if isinstance(result_time, str):
-                try:
-                    result_time = datetime.fromisoformat(result_time.replace("Z", "+00:00"))
-                except (ValueError, AttributeError):
-                    result_time = None
-            
-            if result_time and result_time < cutoff:
+            # Skip if timestamp invalid or before cutoff
+            if result_time is None:
+                continue
+            if result_time < cutoff:
                 continue
             
-            # Check tier
-            result_tier = getattr(result, "tier", None)
+            # Check tier - use privacy_tier field
+            result_tier = getattr(result, "privacy_tier", None)
             if result_tier != tier:
                 continue
             
             # Extract metrics
             similarity = getattr(result, "similarity_score", 0.0)
-            latency_diff = getattr(result, "latency_diff_seconds", 0.0) * 1000  # Convert to ms
+            latency_diff = getattr(result, "latency_diff_ms", 0.0)  # Already in ms
             cost_savings = getattr(result, "cost_savings_usd", 0.0)
             is_match = getattr(result, "is_quality_match", False)
             
@@ -222,7 +232,7 @@ class MetricsReader:
                 latency_diff_ms=latency_diff,
                 cost_savings_usd=cost_savings,
                 is_quality_match=is_match,
-                timestamp=result_time or _utcnow(),
+                timestamp=result_time,
             ))
         
         return samples
@@ -236,24 +246,22 @@ class MetricsReader:
         results = getattr(self._shadow_runner, "_results", [])
         
         for result in results:
-            result_time = getattr(result, "timestamp", None)
+            # Parse timestamp safely
+            result_time = self._parse_timestamp(getattr(result, "timestamp", None))
             
-            # Parse timestamp if it's a string
-            if isinstance(result_time, str):
-                try:
-                    result_time = datetime.fromisoformat(result_time.replace("Z", "+00:00"))
-                except (ValueError, AttributeError):
-                    result_time = None
-            
-            if result_time and result_time < cutoff:
+            # Skip if timestamp invalid or before cutoff
+            if result_time is None:
+                continue
+            if result_time < cutoff:
                 continue
             
-            result_tier = getattr(result, "tier", None)
+            # Use privacy_tier field
+            result_tier = getattr(result, "privacy_tier", None)
             if result_tier is None:
                 continue
             
             similarity = getattr(result, "similarity_score", 0.0)
-            latency_diff = getattr(result, "latency_diff_seconds", 0.0) * 1000
+            latency_diff = getattr(result, "latency_diff_ms", 0.0)  # Already in ms
             cost_savings = getattr(result, "cost_savings_usd", 0.0)
             is_match = getattr(result, "is_quality_match", False)
             
@@ -263,7 +271,7 @@ class MetricsReader:
                 latency_diff_ms=latency_diff,
                 cost_savings_usd=cost_savings,
                 is_quality_match=is_match,
-                timestamp=result_time or _utcnow(),
+                timestamp=result_time,
             ))
         
         return samples
