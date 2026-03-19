@@ -208,7 +208,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     for endpoint in local_config.endpoints:
         if endpoint.enabled:
             healthy = backend_manager._health_status.get(endpoint.name, False)
-            set_backend_health(endpoint.name, healthy, is_cloud=False)
+            set_backend_health(endpoint.name, healthy, is_cloud=False, model=endpoint.model)
 
     # =========================================================================
     # Initialize Cloud Backends
@@ -255,13 +255,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # =========================================================================
     # Start Background Tasks
     # =========================================================================
+    # Create endpoint name -> model mapping for health metrics
+    endpoint_models = {ep.name: ep.model for ep in local_config.endpoints if ep.enabled}
+    
     async def health_check_loop() -> None:
         while True:
             await asyncio.sleep(local_config.health_check_interval_seconds)
             health_status = await backend_manager.refresh_health()
             for endpoint_name, healthy in health_status.items():
                 is_cloud = endpoint_name in backend_manager._cloud_backends
-                set_backend_health(endpoint_name, healthy, is_cloud=is_cloud)
+                model = endpoint_models.get(endpoint_name, "") if not is_cloud else ""
+                set_backend_health(endpoint_name, healthy, is_cloud=is_cloud, model=model)
 
     health_task = asyncio.create_task(health_check_loop())
 

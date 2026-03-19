@@ -1,53 +1,90 @@
 # inference-sentinel configuration
-# This file can be used as an alternative to environment variables
 
-# Environment
 env: development
 debug: true
 
-# Server settings
 host: "0.0.0.0"
 port: 8000
 
 # Local inference backends
 local:
   endpoints:
-    # Mac Mini - primary endpoint
-    - name: mac-mini
-      host: localhost  # Use "ollama" when running in Docker, "localhost" when native
+    - name: gemma
+      host: host.docker.internal
       port: 11434
       model: "gemma3:4b"
       priority: 1
       enabled: true
 
-    # MacBook - secondary endpoint (update IP when running)
-    # - name: macbook
-    #   host: 192.168.1.20
-    #   port: 11434
-    #   model: "gemma3:4b"
-    #   priority: 2
-    #   enabled: true
+    - name: mistral
+      host: host.docker.internal
+      port: 11434
+      model: "mistral"
+      priority: 1
+      enabled: true
 
-  selection_strategy: priority  # priority | round_robin | latency_best
+  selection_strategy: round_robin
   health_check_interval_seconds: 30
   failover_enabled: true
   timeout_seconds: 120
 
-# Cloud backends (Phase 2)
+# Cloud backends
 cloud:
   primary: anthropic
   fallback: google
   anthropic_model: "claude-sonnet-4-20250514"
   google_model: "gemini-2.0-flash"
   timeout_seconds: 60
-  # API keys should be set via environment variables:
-  # SENTINEL_CLOUD__ANTHROPIC_API_KEY
-  # SENTINEL_CLOUD__GOOGLE_API_KEY
 
-# Telemetry settings
+# Cloud selection strategy
+cloud_selection:
+  strategy: round_robin
+  primary: anthropic
+  fallback: google
+  max_retries: 2
+  retry_delay_ms: 500
+
+# NER Classification
+ner:
+  enabled: true
+  model: fast
+  device: cpu
+  confidence_threshold: 0.7
+  skip_if_regex_tier_gte: 3
+
+# Shadow Mode
+shadow:
+  enabled: true
+  shadow_tiers: [0, 1]
+  sample_rate: 1.0
+  similarity_enabled: false
+  local_timeout_seconds: 60
+  store_responses: false
+
+# Closed-Loop Controller
+controller:
+  enabled: true
+  mode: observe
+  evaluation_interval_seconds: 60
+  window_seconds: 300
+  drift_threshold: 0.10
+  cost_savings_threshold_usd: 50.0
+
+# Session Management (One-Way Trapdoor)
+session:
+  enabled: false
+  ttl_seconds: 900
+  max_sessions: 10000
+  lock_threshold_tier: 2
+  buffer_size: 5
+  scrub_buffer: true
+  inject_context_on_handoff: true
+  capability_guardrail: true
+
+# Telemetry
 telemetry:
   enabled: true
-  otlp_endpoint: "http://localhost:4317"
+  otlp_endpoint: "http://tempo:4317"
   service_name: "inference-sentinel"
   log_level: INFO
   metrics_port: 9090

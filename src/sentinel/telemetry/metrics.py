@@ -136,7 +136,7 @@ COST_SAVINGS_USD_TOTAL = Counter(
 LOCAL_BACKEND_HEALTHY = Gauge(
     "sentinel_local_backend_healthy",
     "Local backend health status (1=healthy, 0=unhealthy)",
-    labelnames=["endpoint"]
+    labelnames=["endpoint", "model"]
 )
 
 CLOUD_BACKEND_HEALTHY = Gauge(
@@ -310,12 +310,12 @@ def record_routing_latency(latency_ms: float) -> None:
     ROUTING_LATENCY_SECONDS.observe(latency_ms / 1000)
 
 
-def set_backend_health(endpoint: str, healthy: bool, is_cloud: bool = False) -> None:
+def set_backend_health(endpoint: str, healthy: bool, is_cloud: bool = False, model: str = "") -> None:
     """Update backend health status."""
     if is_cloud:
         CLOUD_BACKEND_HEALTHY.labels(provider=endpoint).set(1 if healthy else 0)
     else:
-        LOCAL_BACKEND_HEALTHY.labels(endpoint=endpoint).set(1 if healthy else 0)
+        LOCAL_BACKEND_HEALTHY.labels(endpoint=endpoint, model=model).set(1 if healthy else 0)
 
 
 def record_error(error_type: str, backend: str = "unknown") -> None:

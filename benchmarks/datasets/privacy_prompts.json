@@ -350,7 +350,7 @@
     },
     {
       "id": "tier3_85351a69",
-      "text": "SSN: 781-32-9762, DOB: 09/17/1979. Verify identity for loan application.",
+      "text": "SSN: 781-32-9762, DOB: 09/18/1979. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -600,7 +600,7 @@
     },
     {
       "id": "tier3_d226a8b3",
-      "text": "SSN: 044-30-3464, DOB: 09/21/2003. Verify identity for loan application.",
+      "text": "SSN: 044-30-3464, DOB: 09/22/2003. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -1064,7 +1064,7 @@
     },
     {
       "id": "tier3_336b00cb",
-      "text": "SSN: 632-26-7502, DOB: 05/03/1972. Verify identity for loan application.",
+      "text": "SSN: 632-26-7502, DOB: 05/04/1972. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -1476,7 +1476,7 @@
     },
     {
       "id": "tier3_613d2de9",
-      "text": "SSN: 478-13-7693, DOB: 02/06/2004. Verify identity for loan application.",
+      "text": "SSN: 478-13-7693, DOB: 02/07/2004. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -1591,7 +1591,7 @@
     },
     {
       "id": "tier3_83f82f16",
-      "text": "SSN: 100-51-6115, DOB: 11/04/1953. Verify identity for loan application.",
+      "text": "SSN: 100-51-6115, DOB: 11/05/1953. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -1881,7 +1881,7 @@
     },
     {
       "id": "tier3_694d7b00",
-      "text": "SSN: 141-81-3792, DOB: 03/20/1987. Verify identity for loan application.",
+      "text": "SSN: 141-81-3792, DOB: 03/21/1987. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -2406,7 +2406,7 @@
     },
     {
       "id": "tier3_8f10d33e",
-      "text": "SSN: 339-83-1296, DOB: 04/28/1983. Verify identity for loan application.",
+      "text": "SSN: 339-83-1296, DOB: 04/29/1983. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -2982,7 +2982,7 @@
     },
     {
       "id": "tier3_755cee2a",
-      "text": "SSN: 643-54-6147, DOB: 01/28/2005. Verify identity for loan application.",
+      "text": "SSN: 643-54-6147, DOB: 01/29/2005. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
@@ -3055,7 +3055,7 @@
     },
     {
       "id": "tier3_b9aed8e4",
-      "text": "SSN: 403-79-4903, DOB: 04/04/1946. Verify identity for loan application.",
+      "text": "SSN: 403-79-4903, DOB: 04/05/1946. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [

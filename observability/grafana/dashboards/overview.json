@@ -235,7 +235,7 @@
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "value_and_name"
       },
-      "targets": [{ "expr": "sentinel_local_backend_healthy", "legendFormat": "Local (gemma3:4b)", "refId": "A" }],
+      "targets": [{ "expr": "sentinel_local_backend_healthy", "legendFormat": "Local ({{endpoint}} - {{model}})", "refId": "A" }],
       "title": "Backend Health",
       "type": "stat"
     },

@@ -19,6 +19,16 @@ services:
       - SENTINEL_NER__MODEL=fast
       - SENTINEL_NER__DEVICE=cpu
       - SENTINEL_NER__CONFIDENCE_THRESHOLD=0.7
+      # Shadow Mode - ENABLED (for controller to work)
+      - SENTINEL_SHADOW__ENABLED=true
+      - SENTINEL_SHADOW__SHADOW_TIERS=[0,1]
+      - SENTINEL_SHADOW__SAMPLE_RATE=1.0
+      - SENTINEL_SHADOW__SIMILARITY_ENABLED=false
+      # Closed-Loop Controller - ENABLED in OBSERVE mode
+      - SENTINEL_CONTROLLER__ENABLED=true
+      - SENTINEL_CONTROLLER__MODE=observe
+      - SENTINEL_CONTROLLER__EVALUATION_INTERVAL_SECONDS=60
+      - SENTINEL_CONTROLLER__WINDOW_SECONDS=300
       # Telemetry
       - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
       - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
@@ -27,11 +37,12 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       # Session management (one-way trapdoor)
-      - SENTINEL_SESSION__ENABLED=true
+      - SENTINEL_SESSION__ENABLED=false
       - SENTINEL_SESSION__TTL_SECONDS=900
       - SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
       - SENTINEL_SESSION__BUFFER_SIZE=5
       - SENTINEL_SESSION__CAPABILITY_GUARDRAIL=true
+      - SENTINEL_LOCAL__SELECTION_STRATEGY=round_robin
     volumes:
       - ./config:/home/sentinel/app/config:ro
     depends_on:
