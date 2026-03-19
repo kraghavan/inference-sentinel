@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Message(BaseModel):
@@ -73,6 +73,18 @@ class Choice(BaseModel):
 
     message: Message
     finish_reason: Literal["stop", "length", "error"] = Field(default="stop")
+    
+    @field_validator("finish_reason", mode="before")
+    @classmethod
+    def normalize_finish_reason(cls, v: str) -> str:
+        """Normalize finish_reason from different backends."""
+        if v == "max_tokens":
+            return "length"
+        elif v == "end_turn":
+            return "stop"
+        elif v in ("stop", "length", "error"):
+            return v
+        return "stop"  # Default fallback
 
 
 class InferenceResponse(BaseModel):
