@@ -29,7 +29,9 @@ RUN pip install --upgrade pip && \
     anthropic>=0.18.0 \
     google-generativeai>=0.4.0 \
     numpy>=1.24.0 \
-    cachetools>=5.3.0
+    cachetools>=5.3.0 \
+    spacy>=3.7.0 \
+    transformers>=4.36.0
 
 # Copy source code
 COPY src/ /app/src/
