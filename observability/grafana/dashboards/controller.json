@@ -1,7 +1,5 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": { "list": [] },
   "description": "Closed-loop controller recommendations and quality metrics",
   "editable": true,
   "fiscalYearStartMonth": 0,
@@ -11,10 +9,10 @@
   "liveNow": false,
   "panels": [
     {
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
       "id": 1,
       "options": {
-        "content": "## Closed-Loop Controller Dashboard\n\nMonitors routing recommendations based on shadow mode quality metrics. Controller runs in **observe** mode - logs recommendations but does not auto-apply changes.",
+        "content": "## Closed-Loop Controller\nMonitors routing recommendations based on shadow mode quality metrics. Compares local (gemma3:4b, mistral) vs cloud (claude-sonnet-4, gemini-2.0-flash).",
         "mode": "markdown"
       },
       "transparent": true,
@@ -25,20 +23,11 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.7 },
-              { "color": "green", "value": 0.85 }
-            ]
-          },
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "yellow", "value": 0.7 }, { "color": "green", "value": 0.85 }] },
+          "unit": "percentunit", "min": 0, "max": 1
         }
       },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 3 },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 2 },
       "id": 2,
       "options": {
         "orientation": "auto",
@@ -46,14 +35,8 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "targets": [
-        {
-          "expr": "sentinel_shadow_similarity_score_sum / sentinel_shadow_similarity_score_count",
-          "legendFormat": "Avg Similarity",
-          "refId": "A"
-        }
-      ],
-      "title": "Average Similarity Score",
+      "targets": [{ "expr": "sentinel_shadow_similarity_score_sum / sentinel_shadow_similarity_score_count", "legendFormat": "Avg Similarity", "refId": "A" }],
+      "title": "Similarity Score (Local vs Cloud)",
       "type": "gauge"
     },
     {
@@ -61,31 +44,20 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
           "unit": "currencyUSD"
         }
       },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 3 },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 2 },
       "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "targets": [
-        {
-          "expr": "sentinel_shadow_cost_savings_potential_usd_total",
-          "legendFormat": "Total Savings",
-          "refId": "A"
-        }
-      ],
-      "title": "Potential Cost Savings",
+      "targets": [{ "expr": "sentinel_shadow_cost_savings_potential_usd_total", "legendFormat": "Total Savings", "refId": "A" }],
+      "title": "Cost Savings (Local Routing)",
       "type": "stat"
     },
     {
@@ -93,31 +65,20 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": null }]
-          },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
           "unit": "none"
         }
       },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 3 },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 2 },
       "id": 4,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "targets": [
-        {
-          "expr": "sentinel_shadow_requests_total{status=\"success\"}",
-          "legendFormat": "Shadow Comparisons",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Shadow Comparisons",
+      "targets": [{ "expr": "sentinel_shadow_requests_total{status=\"success\"}", "legendFormat": "Shadow Comparisons", "refId": "A" }],
+      "title": "Shadow Comparisons",
       "type": "stat"
     },
     {
@@ -125,31 +86,20 @@
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "purple", "value": null }]
-          },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
           "unit": "none"
         }
       },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 3 },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 2 },
       "id": 5,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
         "textMode": "auto"
       },
-      "targets": [
-        {
-          "expr": "sentinel_requests_total{route=\"cloud\",status=\"success\"}",
-          "legendFormat": "Cloud Requests",
-          "refId": "A"
-        }
-      ],
-      "title": "Cloud Requests (Tier 0/1)",
+      "targets": [{ "expr": "sum(sentinel_requests_total{route=\"cloud\",status=\"success\"})", "legendFormat": "Cloud Requests", "refId": "A" }],
+      "title": "Cloud Requests (Tier 0-1)",
       "type": "stat"
     },
     {
@@ -158,47 +108,22 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
+            "drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth",
+            "lineWidth": 2, "showPoints": "auto", "spanNulls": false,
             "thresholdsStyle": { "mode": "line" }
           },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 0.85 }
-            ]
-          },
-          "unit": "percentunit",
-          "min": 0,
-          "max": 1
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 0.85 }] },
+          "unit": "percentunit", "min": 0, "max": 1
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "id": 6,
       "options": {
         "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "none" }
       },
-      "targets": [
-        {
-          "expr": "rate(sentinel_shadow_similarity_score_sum[5m]) / rate(sentinel_shadow_similarity_score_count[5m])",
-          "legendFormat": "Similarity (5m avg)",
-          "refId": "A"
-        }
-      ],
-      "title": "Similarity Score Over Time",
+      "targets": [{ "expr": "rate(sentinel_shadow_similarity_score_sum[5m]) / rate(sentinel_shadow_similarity_score_count[5m])", "legendFormat": "Similarity (5m avg)", "refId": "A" }],
+      "title": "Similarity Over Time (Local vs Cloud Quality)",
       "type": "timeseries"
     },
     {
@@ -207,41 +132,24 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": true,
-            "axisColorMode": "text",
-            "axisLabel": "seconds",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" }
+            "axisCenteredZero": true, "axisLabel": "seconds",
+            "drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth",
+            "lineWidth": 2, "showPoints": "auto", "spanNulls": false
           },
           "unit": "s"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "id": 7,
       "options": {
         "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "none" }
       },
       "targets": [
-        {
-          "expr": "histogram_quantile(0.5, rate(sentinel_shadow_latency_diff_seconds_bucket[5m]))",
-          "legendFormat": "P50 Latency Diff",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.95, rate(sentinel_shadow_latency_diff_seconds_bucket[5m]))",
-          "legendFormat": "P95 Latency Diff",
-          "refId": "B"
-        }
+        { "expr": "histogram_quantile(0.5, rate(sentinel_shadow_latency_diff_seconds_bucket[5m]))", "legendFormat": "p50 Latency Diff", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, rate(sentinel_shadow_latency_diff_seconds_bucket[5m]))", "legendFormat": "p95 Latency Diff", "refId": "B" }
       ],
-      "title": "Latency Difference (Local - Cloud)",
+      "title": "Latency Diff (Local - Cloud)",
       "type": "timeseries"
     },
     {
@@ -250,64 +158,45 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" }
+            "drawStyle": "line", "fillOpacity": 20, "lineInterpolation": "smooth",
+            "lineWidth": 2, "showPoints": "auto", "spanNulls": false
           },
           "unit": "currencyUSD"
         }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "id": 8,
       "options": {
         "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "none" }
       },
-      "targets": [
-        {
-          "expr": "sentinel_shadow_cost_savings_potential_usd_total",
-          "legendFormat": "Cumulative Savings",
-          "refId": "A"
-        }
-      ],
-      "title": "Cumulative Cost Savings Over Time",
+      "targets": [{ "expr": "sentinel_shadow_cost_savings_potential_usd_total", "legendFormat": "Cumulative Savings", "refId": "A" }],
+      "title": "Cumulative Cost Savings",
       "type": "timeseries"
     },
     {
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } }
-        }
+        "defaults": { "color": { "mode": "palette-classic" } },
+        "overrides": [
+          { "matcher": { "id": "byRegexp", "options": ".*gemma3.*" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byRegexp", "options": ".*mistral.*" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] },
+          { "matcher": { "id": "byRegexp", "options": ".*claude.*" }, "properties": [{ "id": "color", "value": { "fixedColor": "purple", "mode": "fixed" } }] },
+          { "matcher": { "id": "byRegexp", "options": ".*gemini.*" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "local" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "cloud" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "id": 9,
       "options": {
         "legend": { "displayMode": "list", "placement": "right", "showLegend": true },
         "pieType": "pie",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "tooltip": { "mode": "single", "sort": "none" }
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
       },
       "targets": [
-        {
-          "expr": "sentinel_requests_total{route=\"cloud\"}",
-          "legendFormat": "Cloud ({{backend}})",
-          "refId": "A"
-        },
-        {
-          "expr": "sentinel_requests_total{route=\"local\"}",
-          "legendFormat": "Local",
-          "refId": "B"
-        }
+        { "expr": "sum(sentinel_requests_total{route=\"cloud\"})", "legendFormat": "cloud", "refId": "A" },
+        { "expr": "sum(sentinel_requests_total{route=\"local\"})", "legendFormat": "local", "refId": "B" }
       ],
       "title": "Route Distribution",
       "type": "piechart"
@@ -318,37 +207,21 @@
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
-            "axisCenteredZero": false,
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" }
+            "drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth",
+            "lineWidth": 2, "showPoints": "auto", "spanNulls": false
           },
           "unit": "reqps"
         }
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
       "id": 10,
       "options": {
         "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "multi", "sort": "none" }
       },
       "targets": [
-        {
-          "expr": "rate(sentinel_shadow_requests_total{status=\"success\"}[1m])",
-          "legendFormat": "Shadow Comparisons/sec",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(sentinel_requests_total{route=\"cloud\"}[1m])",
-          "legendFormat": "Cloud Requests/sec",
-          "refId": "B"
-        }
+        { "expr": "rate(sentinel_shadow_requests_total{status=\"success\"}[1m])", "legendFormat": "Shadow Comparisons/sec", "refId": "A" },
+        { "expr": "rate(sentinel_requests_total{route=\"cloud\"}[1m])", "legendFormat": "Cloud Requests/sec", "refId": "B" }
       ],
       "title": "Shadow vs Cloud Request Rate",
       "type": "timeseries"
@@ -360,11 +233,7 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "Prometheus",
-          "value": "prometheus"
-        },
+        "current": { "selected": false, "text": "Prometheus", "value": "prometheus" },
         "hide": 0,
         "includeAll": false,
         "label": "Data Source",
@@ -372,16 +241,12 @@
         "name": "datasource",
         "options": [],
         "query": "prometheus",
-        "queryValue": "",
         "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
       }
     ]
   },
   "time": { "from": "now-15m", "to": "now" },
-  "timepicker": {},
   "timezone": "browser",
   "title": "Inference Sentinel - Controller",
   "uid": "sentinel-controller",

@@ -11,10 +11,14 @@ services:
       - SENTINEL_DEBUG=true
       - SENTINEL_HOST=0.0.0.0
       - SENTINEL_PORT=8000
-      # Local backend - use JSON format for list
-      # For Docker Ollama: host=ollama
-      # For Native Ollama (faster, uses GPU): host=host.docker.internal
-      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "ollama-native", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}]'
+      # Local backends - gemma3:4b + mistral round-robin on Mac Mini M4
+      # Both use native Ollama via host.docker.internal
+      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "gemma", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}, {"name": "mistral", "host": "host.docker.internal", "port": 11434, "model": "mistral", "priority": 1, "enabled": true}]'
+      # NER Classification - ENABLED
+      - SENTINEL_NER__ENABLED=true
+      - SENTINEL_NER__MODEL=fast
+      - SENTINEL_NER__DEVICE=cpu
+      - SENTINEL_NER__CONFIDENCE_THRESHOLD=0.7
       # Telemetry
       - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
       - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
@@ -33,9 +37,6 @@ services:
     depends_on:
       prometheus:
         condition: service_started
-      # Note: For hybrid mode (native Ollama), comment out ollama dependency
-      # ollama:
-      #   condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -67,7 +68,9 @@ services:
         sleep 10
         echo "Pulling gemma3:4b model..."
         /bin/ollama pull gemma3:4b
-        echo "Model ready!"
+        echo "Pulling mistral model..."
+        /bin/ollama pull mistral
+        echo "Models ready!"
         wait
     healthcheck:
       test: ["CMD-SHELL", "ollama list | grep -q 'gemma3'"]
