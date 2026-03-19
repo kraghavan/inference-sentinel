@@ -4,8 +4,7 @@ import time
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from sentinel.api.schemas import (
@@ -25,19 +24,11 @@ from sentinel.classification import (
     get_hybrid_classifier,
     classify_messages_hybrid,
 )
-from sentinel.config import get_settings
 from sentinel.controller import (
     get_controller,
     ControllerConfig,
 )
 from sentinel.routing import route as route_request, RoutingDecision
-from sentinel.session import (
-    get_session_manager,
-    configure_session_manager,
-    SessionState,
-    scrub_content_for_buffer,
-    create_handoff_system_prompt,
-)
 from sentinel.shadow import ShadowRunner, get_shadow_runner
 from sentinel.telemetry import (
     get_logger,
@@ -81,37 +72,6 @@ def set_shadow_runner(runner: ShadowRunner) -> None:
     _shadow_runner = runner
 
 
-def extract_client_ip(request: Request) -> str:
-    """Extract client IP from request.
-    
-    Checks X-Forwarded-For header first (for proxies/load balancers),
-    then falls back to direct client IP.
-    
-    Args:
-        request: FastAPI request object
-        
-    Returns:
-        Client IP address string
-    """
-    # Check X-Forwarded-For header (set by proxies)
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        # Take the first IP in the chain (original client)
-        return forwarded_for.split(",")[0].strip()
-    
-    # Check X-Real-IP header (some proxies use this)
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip.strip()
-    
-    # Fall back to direct client IP
-    if request.client:
-        return request.client.host
-    
-    # Default if nothing available
-    return "0.0.0.0"
-
-
 @router.get("/health", response_model=HealthResponse)
 async def health_check(
     manager: Annotated[BackendManager, Depends(get_backend_manager)],
@@ -137,22 +97,11 @@ async def health_check(
 )
 async def inference(
     request: InferenceRequest,
-    http_request: Request,
     manager: Annotated[BackendManager, Depends(get_backend_manager)],
-) -> JSONResponse:
+) -> InferenceResponse:
     """Run inference on the best available backend."""
     request_id = f"req_{uuid.uuid4().hex[:12]}"
     start_time = time.perf_counter()
-    
-    # Extract client IP for session management
-    client_ip = extract_client_ip(http_request)
-    
-    # Session management variables
-    session_manager = get_session_manager()
-    session = None
-    session_state_str = None
-    session_locked = False
-    is_handoff = False  # True if this is first request after lock
 
     logger.info(
         "Inference request received",
@@ -160,7 +109,6 @@ async def inference(
         model=request.model,
         routing_override=request.routing_override,
         message_count=len(request.messages),
-        client_ip=client_ip[:16] + "..." if len(client_ip) > 16 else client_ip,  # Truncate for logs
     )
 
     # Convert messages to dict format
@@ -188,68 +136,11 @@ async def inference(
         entity_types=classification.entity_types,
         latency_ms=round(classification_latency_ms, 2),
     )
-    
-    # =========================================================================
-    # Session Management: Update state and check for LOCAL_LOCKED
-    # =========================================================================
-    if session_manager is not None:
-        # Get session state BEFORE this request
-        session = await session_manager.get_or_create_session_async(client_ip)
-        was_locked_before = session.is_local_locked
-        
-        # Update session state based on classification
-        # This may lock the session if tier >= threshold (one-way trapdoor)
-        session = await session_manager.update_session_state_async(
-            client_ip,
-            tier=classification.tier,
-            entities=classification.entity_types,
-        )
-        
-        session_state_str = session.state.value
-        session_locked = session.is_local_locked
-        
-        # Detect handoff: session just became locked
-        is_handoff = session_locked and not was_locked_before
-        
-        if is_handoff:
-            logger.info(
-                "Session locked - handoff to local",
-                request_id=request_id,
-                trigger_tier=classification.tier,
-            )
-        
-        # Add user message to buffer (scrub if PII detected)
-        user_content = messages[-1]["content"] if messages else ""
-        scrubbed = None
-        if classification.entities_detected:
-            entity_dicts = [
-                {"value": e.value, "type": e.entity_type}
-                for e in classification.entities_detected
-                if hasattr(e, 'value')
-            ]
-            if entity_dicts:
-                scrubbed = scrub_content_for_buffer(user_content, entity_dicts)
-        
-        await session_manager.add_to_buffer_async(
-            client_ip,
-            role="user",
-            content=user_content,
-            tier=classification.tier,
-            scrubbed_content=scrubbed,
-        )
 
-    # Phase 2: Route based on classification (session may override)
+    # Phase 2: Route based on classification
     routing_start = time.perf_counter()
     override: Literal["local", "cloud"] | None = None
-    
-    # Session LOCAL_LOCKED overrides everything
-    if session_locked:
-        override = "local"
-        logger.debug(
-            "Routing override: session is LOCAL_LOCKED",
-            request_id=request_id,
-        )
-    elif request.routing_override in ("local", "cloud"):
+    if request.routing_override in ("local", "cloud"):
         override = request.routing_override  # type: ignore
     
     routing_decision = route_request(classification, override)
@@ -264,7 +155,6 @@ async def inference(
         route=routing_decision.route,
         reason=routing_decision.reason,
         override_applied=routing_decision.override_applied,
-        session_locked=session_locked,
     )
 
     # Generate response using routed backend
@@ -273,39 +163,6 @@ async def inference(
     # Track in-progress requests
     backend_type = "local" if routing_decision.route == "local" else "cloud"
     REQUESTS_IN_PROGRESS.labels(backend=backend_type).inc()
-    
-    # Get sticky backend if session exists
-    sticky_backend = None
-    if session_manager is not None:
-        sticky_backend = await session_manager.get_sticky_backend_async(
-            client_ip, 
-            "local" if routing_decision.route == "local" else "cloud"
-        )
-    
-    # Prepare messages with handoff context if needed
-    inference_messages = messages
-    if is_handoff and session_manager is not None:
-        # Get buffer context for handoff
-        handoff_context = await session_manager.get_handoff_context_async(client_ip)
-        if handoff_context:
-            # Create handoff system prompt with capability guardrails
-            buffer = await session_manager.get_buffer_async(client_ip)
-            if buffer:
-                settings = get_settings()
-                handoff_prompt = create_handoff_system_prompt(
-                    buffer,
-                    capability_guardrail=settings.session.capability_guardrail,
-                )
-                # Inject system message at the beginning
-                inference_messages = [
-                    {"role": "system", "content": handoff_prompt},
-                    *messages,
-                ]
-                logger.debug(
-                    "Injected handoff context",
-                    request_id=request_id,
-                    context_chars=len(handoff_prompt),
-                )
     
     try:
         # Determine if we can actually route to cloud
@@ -320,28 +177,22 @@ async def inference(
 
         if actual_route == "cloud":
             result, backend, final_route = await manager.generate_routed(
-                messages=inference_messages,
+                messages=messages,
                 route="cloud",
                 model=request.model if request.model not in ("auto", "local", "cloud") else None,
                 max_tokens=request.max_tokens,
                 temperature=request.temperature,
-                sticky_backend=sticky_backend,  # Pass sticky backend hint
             )
         else:
+            # For local routes, always use None so OllamaBackend uses its configured model
+            # User models like "gpt-4" don't exist in Ollama and would cause 404 errors
             result, backend = await manager.generate(
-                messages=inference_messages,
-                model=request.model if request.model not in ("auto", "local", "cloud") else None,
+                messages=messages,
+                model=None,
                 max_tokens=request.max_tokens,
                 temperature=request.temperature,
-                sticky_backend=sticky_backend,  # Pass sticky backend hint
             )
             final_route = "local"
-        
-        # Set sticky backend for future requests
-        if session_manager is not None and backend is not None:
-            backend_name = backend.endpoint_name
-            await session_manager.set_backend_async(client_ip, final_route, backend_name)
-            
     finally:
         REQUESTS_IN_PROGRESS.labels(backend=backend_type).dec()
     
@@ -453,34 +304,15 @@ async def inference(
         ttft_ms=result.ttft_ms,
         total_latency_ms=total_latency_ms,
         tokens=result.completion_tokens,
-        session_state=session_state_str,
     )
-    
-    # =========================================================================
-    # Session: Add assistant response to buffer
-    # =========================================================================
-    if session_manager is not None and result.content:
-        await session_manager.add_to_buffer_async(
-            client_ip,
-            role="assistant",
-            content=result.content,
-            tier=0,  # Assistant responses are not classified
-        )
 
-    # Normalize finish_reason (Anthropic returns 'max_tokens', we use 'length')
-    finish_reason = result.finish_reason
-    if finish_reason == "max_tokens":
-        finish_reason = "length"
-    elif finish_reason not in ("stop", "length", "error"):
-        finish_reason = "stop"
-
-    response_data = InferenceResponse(
+    return InferenceResponse(
         id=request_id,
         model=result.model,
         choices=[
             Choice(
                 message=Message(role="assistant", content=result.content),
-                finish_reason=finish_reason,  # type: ignore
+                finish_reason=result.finish_reason,  # type: ignore
             )
         ],
         usage=Usage(
@@ -506,24 +338,7 @@ async def inference(
             tokens_per_second=tokens_per_second,
             cost_usd=result.cost_usd if result.cost_usd else 0.0,
             cost_savings_usd=0.0,  # TODO: Calculate vs cloud baseline
-            session_state=session_state_str,
-            session_locked_by_pii=session_locked,
         ),
-    )
-    
-    # Build response with custom headers for session state
-    headers = {
-        "X-Sentinel-Route": final_route,
-        "X-Sentinel-Backend": endpoint_name,
-        "X-Sentinel-Tier": str(classification.tier),
-    }
-    
-    if session_state_str:
-        headers["X-Sentinel-Session"] = "secure-local" if session_locked else "cloud-eligible"
-    
-    return JSONResponse(
-        content=response_data.model_dump(),
-        headers=headers,
     )
 
 
