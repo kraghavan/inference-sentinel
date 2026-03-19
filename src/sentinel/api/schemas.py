@@ -57,6 +57,15 @@ class SentinelMetadata(BaseModel):
     tokens_per_second: float | None = Field(default=None)
     cost_usd: float = Field(default=0.0)
     cost_savings_usd: float = Field(default=0.0)
+    # Session fields
+    session_state: str | None = Field(
+        default=None, 
+        description="Session state: 'cloud_eligible' or 'local_locked'"
+    )
+    session_locked_by_pii: bool = Field(
+        default=False,
+        description="Whether this session is locked due to PII detection"
+    )
 
 
 class Choice(BaseModel):

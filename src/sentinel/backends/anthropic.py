@@ -212,9 +212,16 @@ class AnthropicBackend(CloudBackend):
             # Calculate cost using inherited method
             cost_usd = self.calculate_cost(model, prompt_tokens, completion_tokens)
 
-            # Map stop reason
+            # Map stop reason to our standard values
             stop_reason = data.get("stop_reason", "stop")
-            finish_reason = "stop" if stop_reason == "end_turn" else stop_reason
+            if stop_reason == "end_turn":
+                finish_reason = "stop"
+            elif stop_reason == "max_tokens":
+                finish_reason = "length"
+            elif stop_reason in ("stop", "length", "error"):
+                finish_reason = stop_reason
+            else:
+                finish_reason = "stop"  # Default fallback
 
             logger.info(
                 "Anthropic generation complete",

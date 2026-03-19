@@ -46,7 +46,7 @@ class GoogleBackend(CloudBackend):
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-1.5-flash",
+        model: str = "gemini-2.0-flash",
         timeout: float = 60.0,
         max_retries: int = 2,
     ):
@@ -54,7 +54,7 @@ class GoogleBackend(CloudBackend):
 
         Args:
             api_key: Google AI API key.
-            model: Model to use (default: gemini-1.5-flash).
+            model: Model to use (default: gemini-2.0-flash).
             timeout: Request timeout in seconds.
             max_retries: Number of retries on failure.
         """

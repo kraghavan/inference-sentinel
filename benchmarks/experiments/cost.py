@@ -148,9 +148,15 @@ class CostExperiment:
         self,
         endpoint: str = "http://localhost:8000",
         timeout: float = 120.0,
+        isolate_sessions: bool = True,  # Use unique IP per request
     ):
         self.endpoint = endpoint.rstrip("/")
         self.timeout = timeout
+        self.isolate_sessions = isolate_sessions
+    
+    def _generate_unique_ip(self, index: int) -> str:
+        """Generate unique IP for session isolation."""
+        return f"10.{(index >> 16) & 255}.{(index >> 8) & 255}.{index & 255}"
     
     def calculate_cost(
         self,
@@ -182,8 +188,14 @@ class CostExperiment:
         self,
         client: httpx.AsyncClient,
         prompt: LabeledPrompt,
+        request_index: int = 0,
     ) -> RequestCost:
         """Send a single inference request and track costs."""
+        # Build headers with unique IP for session isolation
+        headers = {}
+        if self.isolate_sessions:
+            headers["X-Forwarded-For"] = self._generate_unique_ip(request_index)
+        
         try:
             response = await client.post(
                 f"{self.endpoint}/v1/inference",
@@ -193,6 +205,7 @@ class CostExperiment:
                     "max_tokens": 100,  # Slightly longer for cost accuracy
                     "temperature": 0.7,
                 },
+                headers=headers,
                 timeout=self.timeout,
             )
             
@@ -270,7 +283,7 @@ class CostExperiment:
                 if (i + 1) % 20 == 0:
                     print(f"  Progress: {i + 1}/{len(dataset)}")
                 
-                cost = await self.send_request(client, prompt)
+                cost = await self.send_request(client, prompt, request_index=i)
                 request_costs.append(cost)
         
         # Aggregate results

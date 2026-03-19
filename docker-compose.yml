@@ -1,41 +1,42 @@
 services:
+  # ============== CORE APPLICATION ==============
   sentinel:
     build:
       context: .
       dockerfile: Dockerfile
+      target: prod
     ports:
-      - "8000:8000"
-    volumes:
-      - ./src:/app/src:ro
-      - ./config:/app/config:ro
+      - "8000:8000"           # API + Metrics
     environment:
       - SENTINEL_ENV=development
       - SENTINEL_DEBUG=true
-      - PYTHONPATH=/app/src
       - SENTINEL_HOST=0.0.0.0
       - SENTINEL_PORT=8000
-      # Shadow mode
-      - SENTINEL_SHADOW__ENABLED=true
-      - SENTINEL_SHADOW__SAMPLE_RATE=1.0
-      # Controller
-      - SENTINEL_CONTROLLER__ENABLED=true
-      # Cloud backends
-      - SENTINEL_CLOUD__GOOGLE_MODEL=gemini-2.0-flash
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
-      # Local backends (native Ollama on Mac)
-      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "gemma", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}, {"name": "mistral", "host": "host.docker.internal", "port": 11434, "model": "mistral", "priority": 2, "enabled": true}]'
-      - SENTINEL_LOCAL__SELECTION_STRATEGY=round_robin
+      # Local backend - use JSON format for list
+      # For Docker Ollama: host=ollama
+      # For Native Ollama (faster, uses GPU): host=host.docker.internal
+      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "ollama-native", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}]'
       # Telemetry
       - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
       - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
       - SENTINEL_TELEMETRY__LOG_LEVEL=INFO
-      - SENTINEL_NER__ENABLED=true
-      - SENTINEL_NER__MODEL=fast
-      - SENTINEL_NER__DEVICE=cpu
+      # Cloud API keys (passed from host)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Session management (one-way trapdoor)
+      - SENTINEL_SESSION__ENABLED=true
+      - SENTINEL_SESSION__TTL_SECONDS=900
+      - SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
+      - SENTINEL_SESSION__BUFFER_SIZE=5
+      - SENTINEL_SESSION__CAPABILITY_GUARDRAIL=true
+    volumes:
+      - ./config:/home/sentinel/app/config:ro
     depends_on:
       prometheus:
         condition: service_started
+      # Note: For hybrid mode (native Ollama), comment out ollama dependency
+      # ollama:
+      #   condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -43,7 +44,42 @@ services:
       retries: 3
     networks:
       - sentinel-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
+  # ============== LOCAL INFERENCE ==============
+  # Only used if you don't have native Ollama installed
+  # Start with: docker-compose --profile containerized up -d
+  ollama:
+    profiles: ["containerized"]
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /bin/ollama serve &
+        sleep 10
+        echo "Pulling gemma3:4b model..."
+        /bin/ollama pull gemma3:4b
+        echo "Model ready!"
+        wait
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q 'gemma3'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - sentinel-network
+
+  # ============== OBSERVABILITY ==============
   prometheus:
     image: prom/prometheus:v2.50.0
     ports:
@@ -56,6 +92,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
       - '--storage.tsdb.retention.time=7d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
     networks:
       - sentinel-network
     healthcheck:
@@ -83,9 +121,9 @@ services:
   tempo:
     image: grafana/tempo:2.3.0
     ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "3200:3200"
+      - "4317:4317"           # OTLP gRPC
+      - "4318:4318"           # OTLP HTTP
+      - "3200:3200"           # Tempo query
     volumes:
       - ./observability/tempo/tempo-config.yml:/etc/tempo/tempo.yaml:ro
       - tempo_data:/var/tempo
@@ -102,6 +140,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=sentinel
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_INSTALL_PLUGINS=
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -123,6 +162,7 @@ networks:
     driver: bridge
 
 volumes:
+  ollama_data:
   prometheus_data:
   loki_data:
   tempo_data:

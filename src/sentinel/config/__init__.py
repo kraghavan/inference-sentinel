@@ -6,6 +6,7 @@ from sentinel.config.settings import (
     LocalBackendsConfig,
     LocalEndpoint,
     NERConfig,
+    SessionConfig,
     Settings,
     ShadowConfig,
     TelemetryConfig,
@@ -20,6 +21,7 @@ __all__ = [
     "CloudBackendsConfig",
     "CloudSelectionConfig",
     "NERConfig",
+    "SessionConfig",
     "ShadowConfig",
     "TelemetryConfig",
 ]

@@ -244,8 +244,17 @@ class BackendManager:
         max_tokens: int = 1024,
         temperature: float = 0.7,
         endpoint_name: str | None = None,
+        sticky_backend: str | None = None,
     ) -> tuple[InferenceResult, BaseBackend | None]:
         """Generate a completion using the best available local backend.
+
+        Args:
+            messages: Conversation messages.
+            model: Model name override.
+            max_tokens: Maximum tokens to generate.
+            temperature: Sampling temperature.
+            endpoint_name: Specific endpoint to use.
+            sticky_backend: Preferred backend from session stickiness.
 
         Returns:
             Tuple of (result, backend_used). backend_used is None if all backends failed.
@@ -255,6 +264,16 @@ class BackendManager:
             backend = self._local_backends[endpoint_name]
             result = await backend.generate(messages, model, max_tokens, temperature)
             return result, backend
+        
+        # If sticky backend specified and healthy, use it
+        if sticky_backend and sticky_backend in self._local_backends:
+            backend = self._local_backends[sticky_backend]
+            if self._health_status.get(sticky_backend, False):
+                logger.debug("Using sticky local backend", backend=sticky_backend)
+                result = await backend.generate(messages, model, max_tokens, temperature)
+                if not result.error:
+                    return result, backend
+                # If sticky backend fails, fall through to normal selection
 
         # Select best available local backend
         backend = await self.select_local_backend()
@@ -293,6 +312,7 @@ class BackendManager:
         max_tokens: int = 1024,
         temperature: float = 0.7,
         preferred_backend: str | None = None,
+        sticky_backend: str | None = None,
     ) -> tuple[InferenceResult, BaseBackend | None]:
         """Generate a completion using a cloud backend.
 
@@ -302,11 +322,15 @@ class BackendManager:
             max_tokens: Maximum tokens to generate.
             temperature: Sampling temperature.
             preferred_backend: Preferred cloud provider (e.g., "anthropic", "google").
+            sticky_backend: Session-sticky backend (overrides round-robin).
 
         Returns:
             Tuple of (result, backend_used).
         """
-        backend = self.select_cloud_backend(preferred_backend)
+        # Sticky backend takes precedence over preferred
+        effective_preferred = sticky_backend or preferred_backend
+        
+        backend = self.select_cloud_backend(effective_preferred)
         if backend is None:
             return InferenceResult(
                 content="",
@@ -343,6 +367,7 @@ class BackendManager:
         max_tokens: int = 1024,
         temperature: float = 0.7,
         preferred_cloud_backend: str | None = None,
+        sticky_backend: str | None = None,
     ) -> tuple[InferenceResult, BaseBackend | None, Literal["local", "cloud"]]:
         """Generate a completion using the specified route.
 
@@ -353,25 +378,29 @@ class BackendManager:
             max_tokens: Maximum tokens to generate.
             temperature: Sampling temperature.
             preferred_cloud_backend: Preferred cloud provider for cloud route.
+            sticky_backend: Session-sticky backend (bypasses round-robin).
 
         Returns:
             Tuple of (result, backend_used, actual_route).
         """
         if route == "cloud":
             result, backend = await self.generate_cloud(
-                messages, model, max_tokens, temperature, preferred_cloud_backend
+                messages, model, max_tokens, temperature, 
+                preferred_cloud_backend, sticky_backend
             )
             if result.error and self._config.failover_enabled:
                 # Fallback to local if cloud fails
                 logger.info("Cloud failed, falling back to local")
                 result, backend = await self.generate(
-                    messages, model, max_tokens, temperature
+                    messages, model, max_tokens, temperature,
+                    sticky_backend=sticky_backend
                 )
                 return result, backend, "local"
             return result, backend, "cloud"
         else:
             result, backend = await self.generate(
-                messages, model, max_tokens, temperature
+                messages, model, max_tokens, temperature,
+                sticky_backend=sticky_backend
             )
             return result, backend, "local"
 

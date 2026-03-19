@@ -81,9 +81,29 @@ def run_routing_experiment(dataset_path: Path, output_dir: Path, endpoint: str) 
     print("EXPERIMENT 2: ROUTING PERFORMANCE")
     print(f"{'='*60}")
     
-    # TODO: Implement in experiments/routing.py
-    print("⚠️  Not yet implemented")
-    return {}
+    from benchmarks.datasets.generator import load_dataset
+    from benchmarks.experiments.routing import RoutingExperiment
+    
+    dataset = load_dataset(dataset_path)
+    print(f"Loaded {len(dataset)} prompts")
+    print(f"Endpoint: {endpoint}")
+    
+    experiment = RoutingExperiment(endpoint=endpoint)
+    results = experiment.run(dataset)
+    results.dataset_path = str(dataset_path)
+    
+    experiment.print_summary(results)
+    
+    output_path = output_dir / "routing_results.json"
+    experiment.save_results(results, output_path)
+    
+    return {
+        "successful_requests": results.successful_requests,
+        "latency_p50_ms": results.latency_p50_ms,
+        "latency_p95_ms": results.latency_p95_ms,
+        "requests_per_second": results.requests_per_second,
+        "routed_local_pct": 100 * results.routed_local / max(1, results.successful_requests),
+    }
 
 
 def run_cost_experiment(dataset_path: Path, output_dir: Path, endpoint: str) -> dict:
@@ -92,9 +112,29 @@ def run_cost_experiment(dataset_path: Path, output_dir: Path, endpoint: str) -> 
     print("EXPERIMENT 3: COST ATTRIBUTION")
     print(f"{'='*60}")
     
-    # TODO: Implement in experiments/cost.py
-    print("⚠️  Not yet implemented")
-    return {}
+    from benchmarks.datasets.generator import load_dataset
+    from benchmarks.experiments.cost import CostExperiment
+    
+    dataset = load_dataset(dataset_path)
+    print(f"Loaded {len(dataset)} prompts")
+    print(f"Endpoint: {endpoint}")
+    
+    experiment = CostExperiment(endpoint=endpoint)
+    results = experiment.run(dataset)
+    results.dataset_path = str(dataset_path)
+    
+    experiment.print_summary(results)
+    
+    output_path = output_dir / "cost_results.json"
+    experiment.save_results(results, output_path)
+    
+    return {
+        "actual_cost_usd": results.actual_total_cost_usd,
+        "hypothetical_cloud_cost_usd": results.hypothetical_cloud_cost_usd,
+        "savings_usd": results.total_savings_usd,
+        "savings_percentage": results.savings_percentage,
+        "local_percentage": results.local_percentage,
+    }
 
 
 def run_controller_experiment(dataset_path: Path, output_dir: Path, endpoint: str) -> dict:
@@ -103,9 +143,60 @@ def run_controller_experiment(dataset_path: Path, output_dir: Path, endpoint: st
     print("EXPERIMENT 4: CLOSED-LOOP CONTROLLER")
     print(f"{'='*60}")
     
-    # TODO: Implement in experiments/controller.py
-    print("⚠️  Not yet implemented")
-    return {}
+    from benchmarks.datasets.generator import load_dataset
+    from benchmarks.experiments.controller import ControllerExperiment
+    
+    dataset = load_dataset(dataset_path)
+    print(f"Loaded {len(dataset)} prompts")
+    print(f"Endpoint: {endpoint}")
+    
+    experiment = ControllerExperiment(endpoint=endpoint)
+    results = experiment.run(dataset)
+    results.dataset_path = str(dataset_path)
+    
+    experiment.print_summary(results)
+    
+    output_path = output_dir / "controller_results.json"
+    experiment.save_results(results, output_path)
+    
+    return {
+        "total_requests": results.total_requests_sent,
+        "recommendations_count": results.recommendations_count,
+        "drift_detected": results.drift_detected,
+        "total_cost_usd": results.total_cost_usd,
+        "total_savings_usd": results.total_savings_usd,
+    }
+
+
+def run_session_experiment(output_dir: Path, endpoint: str, sessions: int = 20) -> dict:
+    """Run Experiment 5: Session Stickiness."""
+    print(f"\n{'='*60}")
+    print("EXPERIMENT 5: SESSION STICKINESS")
+    print(f"{'='*60}")
+    
+    from benchmarks.experiments.session import SessionExperiment, print_session_summary
+    
+    experiment = SessionExperiment(
+        endpoint=endpoint,
+        sessions=sessions,
+        requests_per_session=10,
+        pii_probability=0.3,
+    )
+    results = experiment.run()
+    
+    print_session_summary(results)
+    
+    output_path = experiment.save_results(results, output_dir)
+    print(f"\nResults saved to: {output_path}")
+    
+    return {
+        "sessions_tested": results.sessions_tested,
+        "sessions_locked": results.sessions_locked,
+        "trapdoor_violations": results.trapdoor_violations,
+        "trapdoor_success_rate": results.trapdoor_success_rate,
+        "stickiness_success_rate": results.stickiness_success_rate,
+        "handoff_overhead_ms": results.handoff_overhead_ms,
+    }
 
 
 def main():
@@ -157,7 +248,7 @@ Examples:
     parser.add_argument(
         "--experiment",
         type=str,
-        choices=["classification", "routing", "cost", "controller", "all"],
+        choices=["classification", "routing", "cost", "controller", "session", "all"],
         default=None,
         help="Which experiment to run",
     )
@@ -176,6 +267,12 @@ Examples:
         "--ner",
         action="store_true",
         help="Enable NER classifier (requires transformers)",
+    )
+    parser.add_argument(
+        "--sessions",
+        type=int,
+        default=20,
+        help="Number of sessions for session experiment",
     )
     
     args = parser.parse_args()
@@ -204,9 +301,9 @@ Examples:
     experiments_to_run = []
     
     if args.full:
-        experiments_to_run = ["classification", "routing", "cost", "controller"]
+        experiments_to_run = ["classification", "routing", "cost", "controller", "session"]
     elif args.experiment:
-        experiments_to_run = [args.experiment] if args.experiment != "all" else ["classification", "routing", "cost", "controller"]
+        experiments_to_run = [args.experiment] if args.experiment != "all" else ["classification", "routing", "cost", "controller", "session"]
     
     for exp in experiments_to_run:
         if exp == "classification":
@@ -217,6 +314,8 @@ Examples:
             results["cost"] = run_cost_experiment(dataset_path, output_dir, args.endpoint)
         elif exp == "controller":
             results["controller"] = run_controller_experiment(dataset_path, output_dir, args.endpoint)
+        elif exp == "session":
+            results["session"] = run_session_experiment(output_dir, args.endpoint, args.sessions)
     
     # Summary
     if results:

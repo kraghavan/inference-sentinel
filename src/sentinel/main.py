@@ -8,7 +8,7 @@ import uvicorn
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from sentinel.api import router, set_backend_manager, set_shadow_runner
+from sentinel.api.routes import router, set_backend_manager, set_shadow_runner
 from sentinel.backends import BackendManager, AnthropicBackend, GoogleBackend
 from sentinel.config import LocalBackendsConfig, LocalEndpoint, get_settings
 from sentinel.classification import configure_hybrid_classifier
@@ -138,6 +138,32 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     else:
         logger.info("Closed-loop controller disabled")
+
+    # =========================================================================
+    # Initialize Session Manager (One-Way Trapdoor)
+    # =========================================================================
+    from sentinel.session import configure_session_manager
+    
+    session_config = settings.session
+    session_manager = configure_session_manager(
+        enabled=session_config.enabled,
+        ttl_seconds=session_config.ttl_seconds,
+        max_sessions=session_config.max_sessions,
+        lock_threshold_tier=session_config.lock_threshold_tier,
+        buffer_max_turns=session_config.buffer_size,
+        buffer_max_chars=session_config.buffer_size * 800,  # ~200 tokens per turn
+    )
+    
+    if session_config.enabled:
+        logger.info(
+            "Session manager initialized",
+            ttl_seconds=session_config.ttl_seconds,
+            lock_threshold_tier=session_config.lock_threshold_tier,
+            buffer_size=session_config.buffer_size,
+            capability_guardrail=session_config.capability_guardrail,
+        )
+    else:
+        logger.info("Session management disabled")
 
     # =========================================================================
     # Initialize Backend Manager

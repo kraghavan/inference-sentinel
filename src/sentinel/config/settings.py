@@ -55,7 +55,7 @@ class CloudBackendsConfig(BaseSettings):
         validation_alias="GOOGLE_API_KEY",
     )
     anthropic_model: str = Field(default="claude-sonnet-4-20250514")
-    google_model: str = Field(default="gemini-1.5-flash")
+    google_model: str = Field(default="gemini-2.0-flash")
     timeout_seconds: float = Field(default=60.0)
 
 
@@ -184,6 +184,51 @@ class ControllerSettings(BaseSettings):
     )
 
 
+class SessionConfig(BaseSettings):
+    """Configuration for session management (one-way trapdoor)."""
+    
+    enabled: bool = Field(
+        default=False,
+        description="Enable session-based routing stickiness"
+    )
+    ttl_seconds: int = Field(
+        default=900,  # 15 minutes
+        ge=60,
+        le=86400,
+        description="Session TTL in seconds (15 min default)"
+    )
+    max_sessions: int = Field(
+        default=10000,
+        ge=100,
+        le=1000000,
+        description="Maximum concurrent sessions"
+    )
+    lock_threshold_tier: int = Field(
+        default=2,
+        ge=1,
+        le=3,
+        description="Minimum tier to trigger LOCAL_LOCKED (2 = CONFIDENTIAL)"
+    )
+    buffer_size: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Rolling buffer size (number of interactions to remember)"
+    )
+    scrub_buffer: bool = Field(
+        default=True,
+        description="Run classifier on buffer entries before storing"
+    )
+    inject_context_on_handoff: bool = Field(
+        default=True,
+        description="Inject conversation context when switching to local"
+    )
+    capability_guardrail: bool = Field(
+        default=True,
+        description="Inject 'no external tools' warning to local models"
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -216,6 +261,9 @@ class Settings(BaseSettings):
     
     # Closed-loop controller
     controller: ControllerSettings = Field(default_factory=ControllerSettings)
+    
+    # Session management (one-way trapdoor)
+    session: SessionConfig = Field(default_factory=SessionConfig)
 
     # Telemetry
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)

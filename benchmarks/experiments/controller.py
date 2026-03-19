@@ -79,10 +79,16 @@ class ControllerExperiment:
         endpoint: str = "http://localhost:8000",
         timeout: float = 120.0,
         warmup_requests: int = 20,  # Requests before checking controller
+        isolate_sessions: bool = True,  # Use unique IP per request
     ):
         self.endpoint = endpoint.rstrip("/")
         self.timeout = timeout
         self.warmup_requests = warmup_requests
+        self.isolate_sessions = isolate_sessions
+    
+    def _generate_unique_ip(self, index: int) -> str:
+        """Generate unique IP for session isolation."""
+        return f"10.{(index >> 16) & 255}.{(index >> 8) & 255}.{index & 255}"
     
     async def get_controller_status(self, client: httpx.AsyncClient) -> dict:
         """Get current controller status."""
@@ -114,8 +120,14 @@ class ControllerExperiment:
         self,
         client: httpx.AsyncClient,
         prompt: LabeledPrompt,
+        request_index: int = 0,
     ) -> dict:
         """Send a single inference request."""
+        # Build headers with unique IP for session isolation
+        headers = {}
+        if self.isolate_sessions:
+            headers["X-Forwarded-For"] = self._generate_unique_ip(request_index)
+        
         try:
             response = await client.post(
                 f"{self.endpoint}/v1/inference",
@@ -125,6 +137,7 @@ class ControllerExperiment:
                     "max_tokens": 50,
                     "temperature": 0.7,
                 },
+                headers=headers,
                 timeout=self.timeout,
             )
             
@@ -198,7 +211,7 @@ class ControllerExperiment:
                 if (i + 1) % 20 == 0:
                     print(f"  Progress: {i + 1}/{len(dataset)}")
                 
-                result = await self.send_inference_request(client, prompt)
+                result = await self.send_inference_request(client, prompt, request_index=i)
                 
                 if result.get("success"):
                     results.successful_requests += 1

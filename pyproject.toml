@@ -29,6 +29,7 @@ dependencies = [
     "prometheus-client>=0.19.0",
     "structlog>=24.1.0",
     "tenacity>=8.2.0",
+    "cachetools>=5.3.0",
 ]
 
 [project.optional-dependencies]
@@ -99,4 +100,5 @@ addopts = "-v --ignore=tests/integration"
 markers = [
     "integration: marks tests as integration tests (require running services)",
     "ollama: marks tests that require Ollama to be running",
+    "slow: marks tests as slow (load tests, stress tests)",
 ]

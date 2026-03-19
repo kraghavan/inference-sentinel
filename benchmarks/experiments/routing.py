@@ -106,18 +106,31 @@ class RoutingExperiment:
         endpoint: str = "http://localhost:8000",
         timeout: float = 120.0,
         concurrency: int = 1,  # Sequential by default for accurate latency
+        isolate_sessions: bool = True,  # Use unique IP per request
     ):
         self.endpoint = endpoint.rstrip("/")
         self.timeout = timeout
         self.concurrency = concurrency
+        self.isolate_sessions = isolate_sessions
+    
+    def _generate_unique_ip(self, index: int) -> str:
+        """Generate unique IP for session isolation."""
+        # Use 10.x.x.x range (private, won't conflict)
+        return f"10.{(index >> 16) & 255}.{(index >> 8) & 255}.{index & 255}"
     
     async def send_request(
         self,
         client: httpx.AsyncClient,
         prompt: LabeledPrompt,
+        request_index: int = 0,
     ) -> RoutingResult:
         """Send a single inference request."""
         start = time.perf_counter()
+        
+        # Build headers with unique IP for session isolation
+        headers = {}
+        if self.isolate_sessions:
+            headers["X-Forwarded-For"] = self._generate_unique_ip(request_index)
         
         try:
             response = await client.post(
@@ -128,6 +141,7 @@ class RoutingExperiment:
                     "max_tokens": 50,  # Short response for benchmarking
                     "temperature": 0.7,
                 },
+                headers=headers,
                 timeout=self.timeout,
             )
             
@@ -211,7 +225,7 @@ class RoutingExperiment:
                 if (i + 1) % 10 == 0:
                     print(f"  Progress: {i + 1}/{len(dataset)}")
                 
-                result = await self.send_request(client, prompt)
+                result = await self.send_request(client, prompt, request_index=i)
                 individual_results.append(result)
         
         total_duration = time.perf_counter() - start_time
