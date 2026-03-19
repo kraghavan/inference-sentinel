@@ -29,9 +29,12 @@ RUN pip install --upgrade pip && \
     anthropic>=0.18.0 \
     google-generativeai>=0.4.0 \
     numpy>=1.24.0 \
-    pytest>=8.0.0 \
-    pytest-asyncio>=0.23.0
+    cachetools>=5.3.0
+
+# Copy source code
+COPY src/ /app/src/
+COPY config/ /app/config/
 
 EXPOSE 8000
 
-CMD ["uvicorn", "sentinel.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app/src"]
+CMD ["uvicorn", "sentinel.main:app", "--host", "0.0.0.0", "--port", "8000"]

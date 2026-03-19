@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: prod
     ports:
       - "8000:8000"           # API + Metrics
     environment:
