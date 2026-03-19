@@ -11,12 +11,13 @@
 1. [Vision & Positioning](#1-vision--positioning)
 2. [Privacy Taxonomy](#2-privacy-taxonomy)
 3. [Routing Engine](#3-routing-engine)
-4. [Closed-Loop Controller](#4-closed-loop-controller)
-5. [Telemetry Schema](#5-telemetry-schema)
-6. [System Architecture](#6-system-architecture)
-7. [Benchmark Methodology](#7-benchmark-methodology)
-8. [Phased Roadmap](#8-phased-roadmap)
-9. [Repository Structure](#9-repository-structure)
+4. [Session Stickiness](#4-session-stickiness)
+5. [Closed-Loop Controller](#5-closed-loop-controller)
+6. [Telemetry Schema](#6-telemetry-schema)
+7. [System Architecture](#7-system-architecture)
+8. [Benchmark Methodology](#8-benchmark-methodology)
+9. [Phased Roadmap](#9-phased-roadmap)
+10. [Repository Structure](#10-repository-structure)
 
 ---
 
@@ -339,7 +340,134 @@ class RoutingDecision:
 
 ---
 
-## 4. Closed-Loop Controller
+## 4. Session Stickiness
+
+### 4.1 Purpose
+
+Session stickiness ensures **conversational continuity** when PII is detected mid-conversation. Once a session encounters sensitive data (Tier 2+), it permanently locks to local inference for the remainder of the session.
+
+**Problem solved**: Without session stickiness, a multi-turn conversation could alternate between cloud and local backends based on each message's classification, causing:
+- Context fragmentation (local model doesn't know what cloud discussed)
+- Privacy leakage (cloud sees follow-up questions referencing PII)
+- Inconsistent user experience
+
+### 4.2 State Machine
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SESSION STATE MACHINE                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────┐         PII Detected          ┌──────────────────┐
+│  │                  │         (Tier >= 2)           │                  │
+│  │  CLOUD_ELIGIBLE  │ ─────────────────────────────▶│  LOCAL_LOCKED    │
+│  │                  │                               │                  │
+│  └──────────────────┘                               └──────────────────┘
+│         │                                                   │
+│         │ No PII                                            │ All requests
+│         ▼                                                   ▼
+│    Route to Cloud                                    Route to Local
+│    (or Local for Tier 3)                            (permanently)
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ ONE-WAY TRAPDOOR: Sessions NEVER unlock back to cloud     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Session Identification
+
+```python
+# Session ID generation (deterministic, privacy-preserving)
+session_id = SHA256(client_ip + daily_salt)
+
+# Daily salt rotation
+salt = HMAC_SHA256(server_secret, date.today().isoformat())
+```
+
+**Properties:**
+- Same client gets same session ID within a day
+- Different clients cannot correlate sessions
+- Salt rotation provides forward secrecy
+
+### 4.4 Context Buffer & Handoff
+
+When a session transitions from `CLOUD_ELIGIBLE` to `LOCAL_LOCKED`, the gateway performs a **context handoff**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      CONTEXT HANDOFF                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Rolling Buffer (last 5 turns OR 4000 chars, whichever first)   │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ <context_handoff>                                        │    │
+│  │   <turn role="user">What's the weather like?</turn>      │    │
+│  │   <turn role="assistant">It's sunny today...</turn>      │    │
+│  │   <turn role="user">My SSN is 123-45-6789</turn>         │    │
+│  │   <notice>Content scrubbed for privacy</notice>          │    │
+│  │ </context_handoff>                                       │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│         │                                                        │
+│         ▼                                                        │
+│  Injected as system message to local model                      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Buffer constraints:**
+- `buffer_max_turns`: 5 (configurable)
+- `buffer_max_chars`: 4000 (configurable)
+- Oldest content evicted when limits exceeded
+
+### 4.5 Configuration
+
+```yaml
+session:
+  enabled: true
+  ttl_seconds: 900              # 15 min inactivity → purge
+  lock_threshold_tier: 2        # Tier 2+ triggers lock
+  buffer_size: 5                # Max turns in buffer
+  buffer_max_chars: 4000        # Max characters in buffer
+  capability_guardrail: true    # Prevent cloud lockout for Tier 3
+```
+
+**Environment variables:**
+```bash
+SENTINEL_SESSION__ENABLED=true
+SENTINEL_SESSION__TTL_SECONDS=900
+SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
+SENTINEL_SESSION__BUFFER_SIZE=5
+SENTINEL_SESSION__CAPABILITY_GUARDRAIL=true
+```
+
+### 4.6 Response Headers
+
+Every response includes session metadata:
+
+```
+X-Sentinel-Session: abc123def456...   # Truncated session ID
+X-Sentinel-Route: local               # Current route
+X-Sentinel-Backend: ollama            # Backend used
+X-Sentinel-Tier: 3                    # Privacy tier
+```
+
+### 4.7 Implementation
+
+```
+src/sentinel/session/
+├── __init__.py          # Module exports
+├── salt.py              # Daily salt rotation, session ID generation
+├── buffer.py            # RollingBuffer, content scrubbing, handoff prompt
+└── manager.py           # SessionManager, state machine, TTL cache
+```
+
+---
+
+## 5. Closed-Loop Controller
 
 ### 4.1 Purpose
 
@@ -546,7 +674,7 @@ controller:
 
 ---
 
-## 5. Telemetry Schema
+## 6. Telemetry Schema
 
 ### 5.1 Design Principles
 
@@ -742,7 +870,7 @@ inference_request (root span)
 
 ---
 
-## 6. System Architecture
+## 7. System Architecture
 
 ### 6.1 Hardware Setup
 
@@ -1172,7 +1300,7 @@ spec:
 
 ---
 
-## 7. Benchmark Methodology
+## 8. Benchmark Methodology
 
 ### 7.1 Objectives
 
@@ -1453,88 +1581,90 @@ benchmark_results/
 
 ---
 
-## 8. Phased Roadmap
+## 9. Phased Roadmap
 
-### Phase 0: Foundation (Week 1)
+### Phase 0: Foundation (Week 1) ✅
 
 **Goal**: Repository setup, basic FastAPI skeleton, Docker Compose with Ollama
 
 **Deliverables:**
-- [ ] Repository initialized with structure (Section 9)
-- [ ] FastAPI app with `/health`, `/v1/inference` endpoints
-- [ ] Docker Compose with sentinel + ollama services
-- [ ] Basic request/response schema (no routing logic yet)
-- [ ] Ollama responding to hardcoded requests
-- [ ] README with setup instructions
+- [x] Repository initialized with structure (Section 9)
+- [x] FastAPI app with `/health`, `/v1/inference` endpoints
+- [x] Docker Compose with sentinel + ollama services
+- [x] Basic request/response schema (no routing logic yet)
+- [x] Ollama responding to hardcoded requests
+- [x] README with setup instructions
 
 **Exit criteria**: Can send a request to localhost:8000/v1/inference and get a response from Ollama
 
 ---
 
-### Phase 1: Privacy Classification (Week 2)
+### Phase 1: Privacy Classification (Week 2) ✅
 
 **Goal**: Implement privacy taxonomy and classification pipeline
 
 **Deliverables:**
-- [ ] Privacy taxonomy YAML schema and loader
-- [ ] Regex-based classifier (Tier 3 patterns)
-- [ ] Classification result schema
-- [ ] Unit tests for all Tier 3 patterns (100% coverage)
-- [ ] Classification endpoint for testing: `POST /v1/classify`
-- [ ] Benchmark: classification latency (target: p99 < 50ms)
+- [x] Privacy taxonomy YAML schema and loader
+- [x] Regex-based classifier (Tier 3 patterns)
+- [x] Classification result schema
+- [x] Unit tests for all Tier 3 patterns (100% coverage)
+- [x] Classification endpoint for testing: `POST /v1/classify`
+- [x] Benchmark: classification latency (target: p99 < 50ms)
 
 **Exit criteria**: Classifier correctly identifies all Tier 3 entities with >99% recall
 
 ---
 
-### Phase 2: Routing Engine (Week 3)
+### Phase 2: Routing Engine (Week 3) ✅
 
 **Goal**: Implement routing logic and cloud backend integration
 
 **Deliverables:**
-- [ ] Routing configuration schema and loader
-- [ ] Routing decision engine (tier-based + SLO checks)
-- [ ] Anthropic backend adapter
-- [ ] Google backend adapter  
-- [ ] Backend health checking
-- [ ] Routing decision logging
-- [ ] Integration tests: tier → correct backend
+- [x] Routing configuration schema and loader
+- [x] Routing decision engine (tier-based + SLO checks)
+- [x] Anthropic backend adapter
+- [x] Google backend adapter  
+- [x] Backend health checking
+- [x] Routing decision logging
+- [x] Integration tests: tier → correct backend
 
 **Exit criteria**: Requests correctly route to local or cloud based on classification
 
 ---
 
-### Phase 3: Observability (Week 4)
+### Phase 3: Observability (Week 4) ✅
 
 **Goal**: Full telemetry pipeline with Grafana dashboards
 
 **Deliverables:**
-- [ ] OpenTelemetry instrumentation (traces)
-- [ ] Prometheus metrics (counters, histograms, gauges)
-- [ ] Structured JSON logging (Loki-compatible)
-- [ ] Tempo integration for trace storage
-- [ ] Grafana dashboards:
-  - [ ] Overview (requests, latency, routes)
-  - [ ] Privacy (tier distribution, detections)
-  - [ ] Cost (savings, per-backend breakdown)
-- [ ] Docker Compose with full observability stack
+- [x] OpenTelemetry instrumentation (traces)
+- [x] Prometheus metrics (counters, histograms, gauges)
+- [x] Structured JSON logging (Loki-compatible)
+- [x] Tempo integration for trace storage
+- [x] Grafana dashboards:
+  - [x] Overview (requests, latency, routes)
+  - [x] Privacy (tier distribution, detections)
+  - [x] Cost (savings, per-backend breakdown)
+- [x] Docker Compose with full observability stack
 
 **Exit criteria**: Can visualize end-to-end request flow in Grafana with correlated metrics/traces/logs
 
 ---
 
-### Phase 4: Advanced Features (Week 5-6)
+### Phase 4: Advanced Features (Week 5-6) ✅
 
-**Goal**: NER classifier, A/B shadow mode, closed-loop controller
+**Goal**: NER classifier, A/B shadow mode, closed-loop controller, session stickiness
 
 **Deliverables:**
-- [ ] NER model integration (Tier 1-2 classification)
-- [ ] Hybrid classification pipeline (regex → NER)
-- [ ] A/B shadow mode implementation
-- [ ] Output similarity computation
-- [ ] Closed-loop controller
-- [ ] Controller metrics + dashboard
-- [ ] Configuration hot-reload
+- [x] NER model integration (Tier 1-2 classification)
+- [x] Hybrid classification pipeline (regex → NER)
+- [x] A/B shadow mode implementation
+- [x] Output similarity computation
+- [x] Closed-loop controller
+- [x] Controller metrics + dashboard
+- [x] Configuration hot-reload
+- [x] Session stickiness with context handoff
+- [x] Round-robin cloud backend selection
 
 **Exit criteria**: Controller automatically adjusts thresholds in response to simulated degradation
 
@@ -1545,12 +1675,13 @@ benchmark_results/
 **Goal**: Reproducible benchmark methodology and initial results
 
 **Deliverables:**
-- [ ] Synthetic dataset generator
-- [ ] Benchmark harness (experiment runner)
-- [ ] Experiment 1: Classification accuracy
-- [ ] Experiment 2: Routing performance
-- [ ] Experiment 3: Cost attribution
-- [ ] Experiment 4: Closed-loop effectiveness
+- [x] Synthetic dataset generator
+- [x] Benchmark harness (experiment runner)
+- [x] Experiment 1: Classification accuracy
+- [x] Experiment 2: Routing performance
+- [x] Experiment 3: Cost attribution
+- [x] Experiment 4: Closed-loop effectiveness
+- [x] Experiment 5: Session stickiness
 - [ ] Automated report generation
 - [ ] Reproducibility documentation
 
@@ -1586,7 +1717,7 @@ benchmark_results/
 
 ---
 
-## 9. Repository Structure
+## 10. Repository Structure
 
 ```
 inference-sentinel/

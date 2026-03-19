@@ -13,14 +13,14 @@
 inference-sentinel automatically routes LLM prompts to **local** or **cloud** inference based on privacy classification. Sensitive data stays on your hardware; safe queries leverage faster/cheaper cloud providers.
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────────────────────────────────┐
 │                           inference-sentinel                                 │
 │                                                                              │
-│  Request ──▶ [Classification] ──▶ [Privacy Tier] ──▶ [Routing Decision]    │
+│  Request ──▶ [Classification] ──▶ [Privacy Tier] ──▶ [Routing Decision]      │
 │                    │                    │                    │               │
-│              Regex + NER          0: PUBLIC            Local (Ollama)       │
+│              Regex + NER          0: PUBLIC            Local (Ollama)        │
 │              (hybrid)             1: INTERNAL          or                    │
-│                                   2: CONFIDENTIAL      Cloud (Claude/Gemini)│
+│                                   2: CONFIDENTIAL      Cloud (Claude/Gemini) │
 │                                   3: RESTRICTED                              │
 │                                         │                                    │
 │                                         ▼                                    │
@@ -30,8 +30,66 @@ inference-sentinel automatically routes LLM prompts to **local** or **cloud** in
 │                            [Closed-Loop Controller]                          │
 │                                         │                                    │
 │                                         ▼                                    │
-│                     Prometheus ◀── Metrics ──▶ Grafana                      │
-└─────────────────────────────────────────────────────────────────────────────┘
+│                     Prometheus ◀── Metrics ──▶ Grafana                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Architecture
+```mermaid
+flowchart TB
+    subgraph INPUT["Request Flow"]
+        REQ["POST /v1/chat/completions"]
+        CLASSIFY["Classification<br/>Regex → NER → Tier 0-3"]
+    end
+
+    subgraph SESSION["Session Stickiness — One-Way Trapdoor"]
+        SID["Session ID = SHA256(IP + daily salt)"]
+        CHECK{"Session<br/>state?"}
+        ELIGIBLE["CLOUD_ELIGIBLE<br/>Can use cloud or local"]
+        LOCKED["LOCAL_LOCKED<br/>🔒 Permanent"]
+        PII{"PII in<br/>request?"}
+        LOCK_ACTION["🚨 LOCK SESSION"]
+    end
+
+    subgraph HANDOFF["Context Handoff"]
+        BUFFER["Rolling buffer<br/>5 turns / 4000 chars"]
+        INJECT["Inject as system message"]
+    end
+
+    subgraph ROUTING["Round-Robin Per Request"]
+        CLOUD_RR{"Cloud pool"}
+        LOCAL_RR{"Local pool"}
+    end
+
+    subgraph CLOUD["Cloud Backends"]
+        ANTHROPIC["claude-sonnet-4"]
+        GOOGLE["gemini-2.0-flash"]
+    end
+
+    subgraph LOCAL["Local — Mac Mini M4"]
+        GEMMA["gemma3:4b"]
+        MISTRAL["mistral"]
+    end
+
+    subgraph OBS["Observability"]
+        SHADOW["Shadow mode"]
+        CTRL["Controller"]
+        PROM["Prometheus → Grafana"]
+    end
+
+    REQ --> CLASSIFY --> SID --> CHECK
+    CHECK -->|new| ELIGIBLE
+    CHECK -->|locked| LOCKED
+    ELIGIBLE --> PII
+    PII -->|"Tier 0-1"| CLOUD_RR
+    PII -->|"Tier 2-3 / PII"| LOCK_ACTION
+    LOCK_ACTION --> BUFFER --> INJECT --> LOCAL_RR
+    LOCK_ACTION -.-> LOCKED
+    LOCKED --> LOCAL_RR
+    CLOUD_RR --> ANTHROPIC & GOOGLE
+    LOCAL_RR --> GEMMA & MISTRAL
+    CLOUD -.-> SHADOW --> CTRL
+    CLOUD & LOCAL --> PROM
 ```
 
 ## Key Features
@@ -40,8 +98,9 @@ inference-sentinel automatically routes LLM prompts to **local** or **cloud** in
 |---------|-------------|
 | **Privacy Classification** | 4-tier taxonomy (PUBLIC → RESTRICTED) with regex + optional NER |
 | **Intelligent Routing** | Route by privacy tier, entity type, or explicit override |
-| **Multi-Backend Support** | Local (Ollama) + Cloud (Anthropic Claude, Google Gemini) |
-| **Round-Robin Cloud Selection** | Load balance across cloud providers |
+| **Session Stickiness** | PII-triggered session locking with context handoff to local inference |
+| **Multi-Backend Support** | Local (Ollama: gemma3:4b + mistral rotation) + Cloud (Anthropic Claude, Google Gemini) |
+| **Round-Robin Selection** | Load balance across cloud providers AND local models |
 | **Shadow Mode** | A/B compare local vs cloud quality without affecting responses |
 | **Closed-Loop Controller** | Observe metrics, recommend routing optimizations |
 | **Hot Reload** | Update config without restart via `POST /admin/reload` |
@@ -55,7 +114,7 @@ inference-sentinel automatically routes LLM prompts to **local** or **cloud** in
 
 - Python 3.11+
 - [Ollama](https://ollama.ai/) running locally
-- A model pulled: `ollama pull gemma3:4b`
+- Models pulled: `ollama pull gemma3:4b && ollama pull mistral`
 
 ### Installation
 
@@ -169,6 +228,13 @@ SENTINEL_SHADOW__SIMILARITY_ENABLED=true
 SENTINEL_CONTROLLER__ENABLED=true
 SENTINEL_CONTROLLER__MODE=observe
 SENTINEL_CONTROLLER__EVALUATION_INTERVAL_SECONDS=60
+
+# Session stickiness
+SENTINEL_SESSION__ENABLED=true
+SENTINEL_SESSION__TTL_SECONDS=900
+SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
+SENTINEL_SESSION__BUFFER_SIZE=5
+SENTINEL_SESSION__CAPABILITY_GUARDRAIL=true
 ```
 
 ### Routing Configuration
@@ -180,6 +246,20 @@ cloud:
   selection_strategy: round_robin
   primary: anthropic
   fallback: google
+
+local:
+  selection_strategy: round_robin        # Rotate between gemma and mistral
+  endpoints:
+    - name: mac-mini
+      host: localhost
+      port: 11434
+      model: "gemma3:4b"
+      priority: 1
+    - name: mac-mini-alt
+      host: localhost
+      port: 11434
+      model: "mistral"
+      priority: 1                        # Same priority = round-robin
 
 routing:
   tier_defaults:
@@ -265,6 +345,58 @@ Response:
   "quality_match_rate": 0.92,
   "total_cost_savings_usd": 12.50
 }
+```
+
+---
+
+## Session Stickiness
+
+Session stickiness ensures conversational continuity when PII is detected mid-conversation. Once a session encounters sensitive data, it **locks to local inference** for the remainder of the session.
+
+```
+Session Start (Cloud)
+    │
+    ├─▶ Request 1: "Hi, how are you?" → Cloud ✓
+    │
+    ├─▶ Request 2: "What's 2+2?" → Cloud ✓
+    │
+    ├─▶ Request 3: "My SSN is 123-45-6789" → Tier 3 detected!
+    │                                         │
+    │                                         ▼
+    │                              SESSION LOCKED TO LOCAL
+    │                              + Context buffer handed off
+    │
+    ├─▶ Request 4: "Thanks!" → Local (locked) 🔒
+    │
+    └─▶ Request 5: "Bye" → Local (locked) 🔒
+```
+
+**Key behaviors:**
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Session ID** | `SHA256(client_ip + daily_salt)` — rotates every 24h |
+| **State Machine** | `CLOUD_ELIGIBLE` → `LOCAL_LOCKED` (one-way, never reverses) |
+| **Context Buffer** | Rolling buffer of last 5 turns OR 4000 chars (dual bounding) |
+| **Handoff** | Injects buffer as system message with XML tags on state transition |
+| **TTL** | 15 min inactivity → session purge |
+
+**Configuration:**
+
+```bash
+export SENTINEL_SESSION__ENABLED=true
+export SENTINEL_SESSION__TTL_SECONDS=900
+export SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
+export SENTINEL_SESSION__BUFFER_SIZE=5
+```
+
+**Response headers:**
+
+```
+X-Sentinel-Session: abc123...
+X-Sentinel-Route: local
+X-Sentinel-Backend: ollama
+X-Sentinel-Tier: 3
 ```
 
 ---
@@ -359,14 +491,19 @@ inference-sentinel/
 │   ├── classification/      # Regex + NER classifiers
 │   ├── controller/          # Closed-loop controller
 │   ├── routing/             # Privacy-based routing
+│   ├── session/             # Session stickiness (salt, buffer, manager)
 │   ├── shadow/              # Shadow mode A/B comparison
 │   ├── telemetry/           # Metrics, logging, tracing
 │   └── config/              # Settings management
 ├── config/
 │   └── routing.yaml         # Routing configuration
 ├── tests/
-│   ├── unit/                # Unit tests
+│   ├── unit/                # Unit tests (218 tests)
 │   └── integration/         # Integration tests
+├── benchmarks/
+│   ├── experiments/         # 5 benchmark experiments
+│   ├── datasets/            # Synthetic data generator
+│   └── harness.py           # Experiment runner
 ├── observability/
 │   ├── grafana/             # Dashboards
 │   ├── prometheus/          # Prometheus config
@@ -389,17 +526,44 @@ inference-sentinel/
 | 3 - Observability | ✅ | Prometheus, Grafana, Loki, Tempo |
 | 4A - Enhanced Classification | ✅ | NER, hybrid classifier, shadow mode, round-robin |
 | 4B - Controller | ✅ | Closed-loop controller, hot reload |
-| 5 - Benchmarks | 🔜 | Reproducible experiments |
+| 4C - Session Stickiness | ✅ | PII-triggered session locking, context handoff |
+| 5 - Benchmarks | 🔄 | Reproducible experiments (5 experiments implemented) |
 | 6 - Production | 🔜 | K8s manifests, security hardening |
 
 ---
 
 ## Hardware Tested
 
-| Device | Chip | RAM | Model | Role |
-|--------|------|-----|-------|------|
-| Mac Mini | M4 | 16GB | gemma3:4b | Primary local inference |
-| MacBook | M1 | 16GB | gemma2:9b | Secondary (failover) |
+| Device | Chip | RAM | Models | Role |
+|--------|------|-----|--------|------|
+| Mac Mini | M4 | 16GB | gemma3:4b, mistral | Primary local inference (rotation) |
+| MacBook | M1 | 16GB | mistral | Secondary (failover) |
+
+### Backend Selection Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    BACKEND SELECTION                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  LOCAL (Tier 2-3):                                               │
+│    Mac Mini ──▶ gemma3:4b ◀──┐                                  │
+│                              │ Round-Robin                       │
+│    Mac Mini ──▶ mistral    ◀─┘                                  │
+│                                                                  │
+│                                                                  │
+│  CLOUD (Tier 0-1):                                               │
+│    Anthropic ──▶ claude-sonnet-4 ◀──┐                           │
+│                                      │ Round-Robin               │
+│    Google    ──▶ gemini-2.0-flash ◀─┘                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Selection strategies:**
+- `round_robin`: Alternate between available backends
+- `primary_fallback`: Use primary, failover on error
+- `priority`: Use highest-priority healthy backend
 
 ---
 
