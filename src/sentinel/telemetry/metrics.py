@@ -17,7 +17,7 @@ APP_INFO = Info(
 REQUESTS_TOTAL = Counter(
     "sentinel_requests_total",
     "Total number of inference requests",
-    labelnames=["route", "backend", "endpoint", "tier", "status"]
+    labelnames=["route", "backend", "endpoint", "model", "tier", "status"]
 )
 
 REQUESTS_IN_PROGRESS = Gauge(
@@ -218,6 +218,7 @@ def record_request(
     route: str,
     backend: str,
     endpoint: str,
+    model: str,
     tier: int,
     status: str = "success"
 ) -> None:
@@ -226,6 +227,7 @@ def record_request(
         route=route,
         backend=backend,
         endpoint=endpoint,
+        model=model,
         tier=str(tier),
         status=status
     ).inc()

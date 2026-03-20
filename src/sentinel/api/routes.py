@@ -242,6 +242,7 @@ async def inference(
         route=final_route,
         backend=backend_type_str,
         endpoint=endpoint_name,
+        model=result.model,
         tier=classification.tier,
         status="success",
     )

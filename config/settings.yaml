@@ -72,7 +72,7 @@ controller:
 
 # Session Management (One-Way Trapdoor)
 session:
-  enabled: false
+  enabled: true
   ttl_seconds: 900
   max_sessions: 10000
   lock_threshold_tier: 2

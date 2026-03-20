@@ -1,1258 +1,125 @@
 {
   "metadata": {
     "version": "1.0",
-    "total_count": 200,
+    "total_count": 48,
     "tier_distribution": {
-      "0": 50,
-      "1": 50,
-      "2": 50,
-      "3": 50
+      "0": 12,
+      "1": 12,
+      "2": 12,
+      "3": 12
     }
   },
   "prompts": [
     {
-      "id": "tier1_c40c5d91",
-      "text": "Our internal API is at https://internal.company.com/api/v3/like-watch-cold-six. Is it responding?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "INTERNAL_URL",
-          "value": "https://internal.company.com/api/v3/like-watch-cold-six",
-          "start": 23,
-          "end": 78
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_ab7f089a",
-      "text": "Our internal API is at https://internal.company.com/api/v1/such-talk-cost-upon. Is it responding?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "INTERNAL_URL",
-          "value": "https://internal.company.com/api/v1/such-talk-cost-upon",
-          "start": 23,
-          "end": 78
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_277eb0aa",
-      "text": "Patient Alyssa Nelson, health insurance ID: FRJ508021882, prescribed Lisinopril 10mg daily.",
+      "id": "tier3_74daaebf",
+      "text": "Patient Joy Mercado, MRN: 79519112, has diagnosis requiring treatment.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
         {
-          "type": "PERSON_NAME",
-          "value": "Alyssa Nelson",
-          "start": 8,
-          "end": 21
+          "type": "MRN",
+          "value": "79519112",
+          "start": 26,
+          "end": 34
+        },
+        {
+          "type": "MRN",
+          "value": "79519112",
+          "start": 26,
+          "end": 34
         },
         {
           "type": "PERSON_NAME",
-          "value": "Alyssa Nelson",
+          "value": "Joy Mercado",
           "start": 8,
-          "end": 21
+          "end": 19
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Joy Mercado",
+          "start": 8,
+          "end": 19
         }
       ],
       "category": "sensitive"
     },
     {
-      "id": "tier1_295d6fbf",
-      "text": "Project code: FQD-94. What's the status?",
+      "id": "tier0_580d7b71",
+      "text": "Explain dependency injection in simple terms.",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier1_693dffbc",
+      "text": "Access the project at https://intranet.corp.local/projects/mggq",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [],
+      "category": "internal"
+    },
+    {
+      "id": "tier1_a013ac6e",
+      "text": "Project code: HSB-161. What's the status?",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
       "entities": [
         {
           "type": "PROJECT_CODE",
-          "value": "FQD-94",
+          "value": "HSB-161",
           "start": 14,
-          "end": 20
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_36386821",
-      "text": "How do I cook tacos?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_f05db76e",
-      "text": "Draft an agenda for a team meeting about project planning.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_45241ea6",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_f4dbca07",
-      "text": "Call James Ochoa at 395-492-6848 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "James Ochoa",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "PHONE",
-          "value": "395-492-6848",
-          "start": 20,
-          "end": 32
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_a491f0b2",
-      "text": "Explain the rules of tennis.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_6808593f",
-      "text": "Check https://internal.company.com/tickets/32706 for updates.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_ac1e86d8",
-      "text": "Contact Regina Mcdonald (taylortammy@example.net) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Regina Mcdonald",
-          "start": 8,
-          "end": 23
-        },
-        {
-          "type": "EMAIL",
-          "value": "taylortammy@example.net",
-          "start": 25,
-          "end": 48
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_96da1dac",
-      "text": "How should I structure a product roadmap?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_8603156a",
-      "text": "Call Lisa Brown at 727-788-4963 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Lisa Brown",
-          "start": 5,
-          "end": 15
-        },
-        {
-          "type": "PHONE",
-          "value": "727-788-4963",
-          "start": 19,
-          "end": 31
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_0a4c9f7f",
-      "text": "Check https://internal.company.com/tickets/75392 for updates.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_52c21221",
-      "text": "Check https://internal.company.com/tickets/52488 for updates.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_0dde29a6",
-      "text": "Explain dependency injection in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_937bf79b",
-      "text": "Tax filing for SSN 247-27-1103, taxpayer Taylor Small. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "247-27-1103",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "247-27-1103",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Taylor Small",
-          "start": 41,
-          "end": 53
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Taylor Small",
-          "start": 41,
-          "end": 53
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_9db7284b",
-      "text": "Tax filing for SSN 307-18-6271, taxpayer Ashley Richardson. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "307-18-6271",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "307-18-6271",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ashley Richardson",
-          "start": 41,
-          "end": 58
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ashley Richardson",
-          "start": 41,
-          "end": 58
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_6fb78271",
-      "text": "Our internal API is at https://internal.company.com/api/v2/could-partner. Is it responding?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "INTERNAL_URL",
-          "value": "https://internal.company.com/api/v2/could-partner",
-          "start": 23,
-          "end": 72
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_766ecb15",
-      "text": "What are the main differences between cats and dogs?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_4f199ec0",
-      "text": "Please email bellangela@example.org with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "bellangela@example.org",
-          "start": 13,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_eb9ed274",
-      "text": "Medical record MRN 70272714 for patient Jessica Carter: Blood type O-, allergies: None.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "MRN",
-          "value": "70272714",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "MRN",
-          "value": "70272714",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Jessica Carter",
-          "start": 40,
-          "end": 54
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Jessica Carter",
-          "start": 40,
-          "end": 54
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_85351a69",
-      "text": "SSN: 781-32-9762, DOB: 09/18/1979. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "781-32-9762",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "781-32-9762",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_72eb7474",
-      "text": "Contact Kerry Lee (michael23@example.org) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Kerry Lee",
-          "start": 8,
-          "end": 17
-        },
-        {
-          "type": "EMAIL",
-          "value": "michael23@example.org",
-          "start": 19,
-          "end": 40
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_ff9ab5c2",
-      "text": "Draft an agenda for a team meeting about project planning.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_0b981ccd",
-      "text": "My social security number is 501-12-8362. Process my application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "501-12-8362",
-          "start": 29,
-          "end": 40
-        },
-        {
-          "type": "SSN",
-          "value": "501-12-8362",
-          "start": 29,
-          "end": 40
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_a6a27967",
-      "text": "My email is cameronhill@example.net. Please send me the report.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "cameronhill@example.net",
-          "start": 12,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_c1dd484a",
-      "text": "Please charge credit card number 4667695252589838 for the purchase.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4667695252589838",
-          "start": 33,
-          "end": 49
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4667695252589838",
-          "start": 33,
-          "end": 49
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_67f1698c",
-      "text": "Patient Joseph Hill, health insurance ID: WRY526164289, prescribed Metformin 25mg twice daily.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Joseph Hill",
-          "start": 8,
-          "end": 19
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Joseph Hill",
-          "start": 8,
-          "end": 19
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_8498e113",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_ffb8102d",
-      "text": "Go to https://corp.internal.net/wiki for the runbook.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_5bf86f3c",
-      "text": "Medical record MRN 84098828 for patient Daniel Meadows: Blood type B-, allergies: Latex.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "MRN",
-          "value": "84098828",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "MRN",
-          "value": "84098828",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Daniel Meadows",
-          "start": 40,
-          "end": 54
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Daniel Meadows",
-          "start": 40,
-          "end": 54
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_434308bc",
-      "text": "What metrics should I track for a SaaS product?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_530ac1c7",
-      "text": "The billing address is 1603 Reese Avenue, South Robert, MA 21132 for account holder Heather White.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Heather White",
-          "start": 84,
-          "end": 97
-        },
-        {
-          "type": "ADDRESS",
-          "value": "1603 Reese Avenue, South Robert, MA 21132",
-          "start": 23,
-          "end": 64
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_adcc3daf",
-      "text": "Deliver to: Sara Haas, 8686 Mills Boulevard, West Nathan, LA 51280",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Sara Haas",
-          "start": 12,
           "end": 21
-        },
-        {
-          "type": "ADDRESS",
-          "value": "8686 Mills Boulevard, West Nathan, LA 51280",
-          "start": 23,
-          "end": 66
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_5553b2fe",
-      "text": "The project id: WLE-531 deadline is approaching.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "PROJECT_CODE",
-          "value": "WLE-531",
-          "start": 16,
-          "end": 23
         }
       ],
       "category": "internal"
     },
     {
-      "id": "tier0_91d63f78",
-      "text": "Explain agile vs waterfall methodology.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_d226a8b3",
-      "text": "SSN: 044-30-3464, DOB: 09/22/2003. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "044-30-3464",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "044-30-3464",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_f166cdcf",
-      "text": "Tax filing for SSN 327-38-8045, taxpayer Christopher Sanders. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "327-38-8045",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "327-38-8045",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Christopher Sanders",
-          "start": 41,
-          "end": 60
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Christopher Sanders",
-          "start": 41,
-          "end": 60
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_28f4e3ce",
-      "text": "Ship the package to Mitchell Jackson at 4598 Fowler Boulevard, North Emilyfurt, MN 67752.",
+      "id": "tier2_a319dcb4",
+      "text": "Reach out to Brittney Campbell at 470-717-9004 or jenniferharris@example.net.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "PERSON_NAME",
-          "value": "Mitchell Jackson",
-          "start": 20,
-          "end": 36
+          "value": "Brittney Campbell",
+          "start": 13,
+          "end": 30
         },
         {
-          "type": "ADDRESS",
-          "value": "4598 Fowler Boulevard, North Emilyfurt, MN 67752",
-          "start": 40,
-          "end": 88
+          "type": "EMAIL",
+          "value": "jenniferharris@example.net",
+          "start": 50,
+          "end": 76
+        },
+        {
+          "type": "PHONE",
+          "value": "470-717-9004",
+          "start": 34,
+          "end": 46
         }
       ],
       "category": "contact"
     },
     {
-      "id": "tier1_d52721e7",
-      "text": "The project id: WSL-196 deadline is approaching.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "PROJECT_CODE",
-          "value": "WSL-196",
-          "start": 16,
-          "end": 23
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_118a9d29",
-      "text": "What is the time complexity of quicksort?",
+      "id": "tier0_88bd6407",
+      "text": "How do I center a div in CSS?",
       "expected_tier": 0,
       "tier_name": "PUBLIC",
       "entities": [],
       "category": "general"
     },
     {
-      "id": "tier1_ab61a7b1",
-      "text": "The project id: OPE-799 deadline is approaching.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "PROJECT_CODE",
-          "value": "OPE-799",
-          "start": 16,
-          "end": 23
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_504e2687",
-      "text": "Medical record MRN 42507072 for patient Lori Carlson: Blood type AB-, allergies: Peanuts.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "MRN",
-          "value": "42507072",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "MRN",
-          "value": "42507072",
-          "start": 19,
-          "end": 27
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Lori Carlson",
-          "start": 40,
-          "end": 52
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Lori Carlson",
-          "start": 40,
-          "end": 52
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_4910fade",
-      "text": "Credit card 4212811836444324 expiring 05/30 with security code 712.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4212811836444324",
-          "start": 12,
-          "end": 28
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4212811836444324",
-          "start": 12,
-          "end": 28
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_714c7df4",
-      "text": "Look up employee id: 587115 in the HR system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "587115",
-          "start": 21,
-          "end": 27
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_439472e6",
-      "text": "Employee id 240814 submitted a request.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "240814",
-          "start": 12,
-          "end": 18
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_ff5e9ff0",
-      "text": "Write a short poem about music.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_11ce5dd2",
-      "text": "Explain the difference between REST and GraphQL.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_1a16342c",
-      "text": "Employee number: 213349 needs access to the system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "213349",
-          "start": 17,
-          "end": 23
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_14296c07",
-      "text": "Explain dependency injection in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_93e34c35",
-      "text": "Please email floressteven@example.com with the meeting notes.",
+      "id": "tier2_77097749",
+      "text": "My email is robertbentley@example.net. Please send me the report.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "EMAIL",
-          "value": "floressteven@example.com",
-          "start": 13,
+          "value": "robertbentley@example.net",
+          "start": 12,
           "end": 37
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_8eaa5841",
-      "text": "Please charge credit card number 4268003694210158 for the purchase.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4268003694210158",
-          "start": 33,
-          "end": 49
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4268003694210158",
-          "start": 33,
-          "end": 49
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_7914f8a8",
-      "text": "The billing address is 3190 Pollard Street, New Patrick, PR 54342 for account holder Sharon Griffin.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Sharon Griffin",
-          "start": 85,
-          "end": 99
-        },
-        {
-          "type": "ADDRESS",
-          "value": "3190 Pollard Street, New Patrick, PR 54342",
-          "start": 23,
-          "end": 65
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_a0a04dc4",
-      "text": "What are best practices for code reviews?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_ef48e8d5",
-      "text": "Write a short poem about space.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_5f987c71",
-      "text": "What metrics should I track for a SaaS product?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_fd350c5f",
-      "text": "Credit card 4511830358767615 expiring 11/33 with security code 0609.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4511830358767615",
-          "start": 12,
-          "end": 28
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4511830358767615",
-          "start": 12,
-          "end": 28
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_eada79a3",
-      "text": "The customer's phone number is 441-595-2337. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "441-595-2337",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_c9af18f8",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_c01f36bf",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_67f48ad5",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_969b6662",
-      "text": "Summarize the history of the Roman Empire.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_9d9d028e",
-      "text": "Wire transfer: account number 8112345816, routing 902448600, amount $50,000.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "8112345816",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "8112345816",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "902448600",
-          "start": 50,
-          "end": 59
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "902448600",
-          "start": 50,
-          "end": 59
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_b807d78a",
-      "text": "Please email laurayoung@example.com with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "laurayoung@example.com",
-          "start": 13,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_bf1e8366",
-      "text": "The customer's phone number is 335-752-6994. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "335-752-6994",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_53cd6268",
-      "text": "Go to https://corp.internal.net/wiki for the runbook.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_815ef6d1",
-      "text": "Write a short poem about nature.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_336b00cb",
-      "text": "SSN: 632-26-7502, DOB: 05/04/1972. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "632-26-7502",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "632-26-7502",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_afd5dea5",
-      "text": "Project code: GHY-921. What's the status?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "PROJECT_CODE",
-          "value": "GHY-921",
-          "start": 14,
-          "end": 21
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_d4d60735",
-      "text": "The billing address is 5744 Anderson Road, Port Tammy, NE 66412 for account holder Jason Ortiz.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Jason Ortiz",
-          "start": 83,
-          "end": 94
-        },
-        {
-          "type": "ADDRESS",
-          "value": "5744 Anderson Road, Port Tammy, NE 66412",
-          "start": 23,
-          "end": 63
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_de1e994a",
-      "text": "Tax filing for SSN 514-79-7727, taxpayer Jason Harris. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "514-79-7727",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "514-79-7727",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Jason Harris",
-          "start": 41,
-          "end": 53
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Jason Harris",
-          "start": 41,
-          "end": 53
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_406f64d6",
-      "text": "Wire transfer: account number 6447765697, routing 256696327, amount $50,000.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "6447765697",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "6447765697",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "256696327",
-          "start": 50,
-          "end": 59
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "256696327",
-          "start": 50,
-          "end": 59
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_8989c5ab",
-      "text": "Patient Michael Weaver, health insurance ID: IIP473415078, prescribed Atorvastatin 25mg twice daily.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Michael Weaver",
-          "start": 8,
-          "end": 22
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Michael Weaver",
-          "start": 8,
-          "end": 22
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_624c69b6",
-      "text": "The project id: MJB-47 deadline is approaching.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "PROJECT_CODE",
-          "value": "MJB-47",
-          "start": 16,
-          "end": 22
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_f396ea37",
-      "text": "Please email paigetaylor@example.com with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "paigetaylor@example.com",
-          "start": 13,
-          "end": 36
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_4a1dab32",
-      "text": "The billing address is 7247 Smith Drive, Port Lawrencechester, OK 53509 for account holder Casey James.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Casey James",
-          "start": 91,
-          "end": 102
-        },
-        {
-          "type": "ADDRESS",
-          "value": "7247 Smith Drive, Port Lawrencechester, OK 53509",
-          "start": 23,
-          "end": 71
         }
       ],
       "category": "contact"
@@ -1266,1237 +133,6 @@
       "category": "general"
     },
     {
-      "id": "tier0_00257ad1",
-      "text": "Explain dependency injection in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_78883058",
-      "text": "Tax filing for SSN 684-16-7626, taxpayer Ian Young. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "684-16-7626",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "684-16-7626",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ian Young",
-          "start": 41,
-          "end": 50
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ian Young",
-          "start": 41,
-          "end": 50
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_fc3e058b",
-      "text": "What is the time complexity of quicksort?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_fa323f69",
-      "text": "Tax filing for SSN 308-88-1321, taxpayer David Terry. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "308-88-1321",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "308-88-1321",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "David Terry",
-          "start": 41,
-          "end": 52
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "David Terry",
-          "start": 41,
-          "end": 52
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_6e068097",
-      "text": "Check https://internal.company.com/tickets/90573 for updates.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_d11fc8c0",
-      "text": "The billing address is 9445 Joyce Street, Hammondfurt, NY 69636 for account holder Dustin Goodman.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Dustin Goodman",
-          "start": 83,
-          "end": 97
-        },
-        {
-          "type": "ADDRESS",
-          "value": "9445 Joyce Street, Hammondfurt, NY 69636",
-          "start": 23,
-          "end": 63
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_93829b43",
-      "text": "Explain the rules of soccer.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_ae849217",
-      "text": "Write a short poem about technology.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_2cd1586a",
-      "text": "Ship the package to Michele Garcia at 5973 Brooks Street, East Amanda, OK 89865.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Michele Garcia",
-          "start": 20,
-          "end": 34
-        },
-        {
-          "type": "ADDRESS",
-          "value": "5973 Brooks Street, East Amanda, OK 89865",
-          "start": 38,
-          "end": 79
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_5958a499",
-      "text": "Explain dependency injection in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_21813d25",
-      "text": "Explain how machine learning works in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_9d4edb71",
-      "text": "Please charge credit card number 4694154993144430 for the purchase.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4694154993144430",
-          "start": 33,
-          "end": 49
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4694154993144430",
-          "start": 33,
-          "end": 49
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_ddd1dfb2",
-      "text": "How should I structure a product roadmap?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_da4bd9ca",
-      "text": "Write a Python function to sort a list.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_ec1b8ca1",
-      "text": "Write a short poem about technology.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_613d2de9",
-      "text": "SSN: 478-13-7693, DOB: 02/07/2004. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "478-13-7693",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "478-13-7693",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_f1f7d904",
-      "text": "My social security number is 702-44-4217. Process my application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "702-44-4217",
-          "start": 29,
-          "end": 40
-        },
-        {
-          "type": "SSN",
-          "value": "702-44-4217",
-          "start": 29,
-          "end": 40
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_6b535a19",
-      "text": "Please charge credit card number 4435930774674836 for the purchase.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4435930774674836",
-          "start": 33,
-          "end": 49
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4435930774674836",
-          "start": 33,
-          "end": 49
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_5fb8d16c",
-      "text": "Write a Python function to sort a list.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_fb2ca025",
-      "text": "Check https://internal.company.com/tickets/9099 for updates.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_1933918c",
-      "text": "Ship the package to Deborah Hanson at 8094 Brennan Boulevard, New Caseyport, IN 98381.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Deborah Hanson",
-          "start": 20,
-          "end": 34
-        },
-        {
-          "type": "ADDRESS",
-          "value": "8094 Brennan Boulevard, New Caseyport, IN 98381",
-          "start": 38,
-          "end": 85
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_4ebfa5c3",
-      "text": "Employee number: 929683 needs access to the system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "929683",
-          "start": 17,
-          "end": 23
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_83f82f16",
-      "text": "SSN: 100-51-6115, DOB: 11/05/1953. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "100-51-6115",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "100-51-6115",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_93f277cc",
-      "text": "My email is lisa80@example.net. Please send me the report.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "lisa80@example.net",
-          "start": 12,
-          "end": 30
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_f16287e4",
-      "text": "What are the main differences between Python and winter?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_df0f06cb",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_c8c5eb2a",
-      "text": "Patient Paul Grant, MRN: 21523236, has diagnosis requiring treatment.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "MRN",
-          "value": "21523236",
-          "start": 25,
-          "end": 33
-        },
-        {
-          "type": "MRN",
-          "value": "21523236",
-          "start": 25,
-          "end": 33
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Paul Grant",
-          "start": 8,
-          "end": 18
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Paul Grant",
-          "start": 8,
-          "end": 18
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_a01ac992",
-      "text": "Go to https://corp.internal.net/wiki for the runbook.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_0f1259e0",
-      "text": "What are best practices for code reviews?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_2227219f",
-      "text": "The customer's phone number is 596-582-5155. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "596-582-5155",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_3bf0d9c1",
-      "text": "Bank account number: 5648960780, routing number: 813510897 for wire transfer.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "5648960780",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "5648960780",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "813510897",
-          "start": 49,
-          "end": 58
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "813510897",
-          "start": 49,
-          "end": 58
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_f24823ab",
-      "text": "The billing address is 2142 Mitchell Street, West Shannon, NY 19814 for account holder Larry Salas.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Larry Salas",
-          "start": 87,
-          "end": 98
-        },
-        {
-          "type": "ADDRESS",
-          "value": "2142 Mitchell Street, West Shannon, NY 19814",
-          "start": 23,
-          "end": 67
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_ab4220a7",
-      "text": "What are the benefits of meditation?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_35a240ae",
-      "text": "Recommend some books about science fiction.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_e15ca666",
-      "text": "Employee id 587282 submitted a request.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "587282",
-          "start": 12,
-          "end": 18
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_580d7b71",
-      "text": "Explain dependency injection in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_1fce01e3",
-      "text": "Tax filing for SSN 815-69-6517, taxpayer Melissa Horn. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "815-69-6517",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "815-69-6517",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Melissa Horn",
-          "start": 41,
-          "end": 53
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Melissa Horn",
-          "start": 41,
-          "end": 53
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_a446be72",
-      "text": "Reach out to Michael Robinson at 902-576-9920 or xsampson@example.org.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Michael Robinson",
-          "start": 13,
-          "end": 29
-        },
-        {
-          "type": "EMAIL",
-          "value": "xsampson@example.org",
-          "start": 49,
-          "end": 69
-        },
-        {
-          "type": "PHONE",
-          "value": "902-576-9920",
-          "start": 33,
-          "end": 45
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_37f25d36",
-      "text": "Please charge credit card number 4969811375942930 for the purchase.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4969811375942930",
-          "start": 33,
-          "end": 49
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4969811375942930",
-          "start": 33,
-          "end": 49
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_694d7b00",
-      "text": "SSN: 141-81-3792, DOB: 03/21/1987. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "141-81-3792",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "141-81-3792",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_104556e5",
-      "text": "Call Carlos King at 215-566-4898 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Carlos King",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "PHONE",
-          "value": "215-566-4898",
-          "start": 20,
-          "end": 32
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_0a3450fc",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_a559e463",
-      "text": "Employee id 725113 submitted a request.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "725113",
-          "start": 12,
-          "end": 18
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_0f9aea4b",
-      "text": "Explain the rules of soccer.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_fba57cc8",
-      "text": "Tax filing for SSN 588-30-8768, taxpayer Susan Davis. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "588-30-8768",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "588-30-8768",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Susan Davis",
-          "start": 41,
-          "end": 52
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Susan Davis",
-          "start": 41,
-          "end": 52
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_f80b2cea",
-      "text": "Bank account number: 2485455239, routing number: 204889313 for wire transfer.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "2485455239",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "2485455239",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "204889313",
-          "start": 49,
-          "end": 58
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "204889313",
-          "start": 49,
-          "end": 58
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_f4e7069a",
-      "text": "Call Lauren Jackson at 283-246-5336 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Lauren Jackson",
-          "start": 5,
-          "end": 19
-        },
-        {
-          "type": "PHONE",
-          "value": "283-246-5336",
-          "start": 23,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_423cad9d",
-      "text": "Bank account number: 9780187424, routing number: 792596980 for wire transfer.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "9780187424",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "9780187424",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "792596980",
-          "start": 49,
-          "end": 58
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "792596980",
-          "start": 49,
-          "end": 58
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_f23e323d",
-      "text": "Contact James Little (daniel37@example.org) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "James Little",
-          "start": 8,
-          "end": 20
-        },
-        {
-          "type": "EMAIL",
-          "value": "daniel37@example.org",
-          "start": 22,
-          "end": 42
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_2c913a7c",
-      "text": "Reach out to Bryan Farrell MD at 527-883-6692 or zosborn@example.net.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Bryan Farrell MD",
-          "start": 13,
-          "end": 29
-        },
-        {
-          "type": "EMAIL",
-          "value": "zosborn@example.net",
-          "start": 49,
-          "end": 68
-        },
-        {
-          "type": "PHONE",
-          "value": "527-883-6692",
-          "start": 33,
-          "end": 45
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_2dbc2134",
-      "text": "Explain the difference between REST and GraphQL.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_78308930",
-      "text": "Call Roberta Hughes at 804-539-2644 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Roberta Hughes",
-          "start": 5,
-          "end": 19
-        },
-        {
-          "type": "PHONE",
-          "value": "804-539-2644",
-          "start": 23,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_1e52d770",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_3b33f3d8",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_ce315937",
-      "text": "Tax filing for SSN 305-05-7369, taxpayer Ashley Greer PhD. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "305-05-7369",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "305-05-7369",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ashley Greer PhD",
-          "start": 41,
-          "end": 57
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ashley Greer PhD",
-          "start": 41,
-          "end": 57
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_287d06ca",
-      "text": "What's the weather like in Kaylamouth during spring?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_27a0c3d7",
-      "text": "Explain how photosynthesis works in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_f1faf665",
-      "text": "Contact Seth Harvey (tyleraguilar@example.org) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Seth Harvey",
-          "start": 8,
-          "end": 19
-        },
-        {
-          "type": "EMAIL",
-          "value": "tyleraguilar@example.org",
-          "start": 21,
-          "end": 45
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_ffd0f9d5",
-      "text": "Write a Python function to sort a list.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_371ecd7b",
-      "text": "What's the weather like in Port Lindachester during fall?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_02ed73ce",
-      "text": "Patient Levi Fowler, health insurance ID: WRV424211872, prescribed Metformin 500mg with meals.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Levi Fowler",
-          "start": 8,
-          "end": 19
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Levi Fowler",
-          "start": 8,
-          "end": 19
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_6b79afcc",
-      "text": "Deliver to: Melissa Taylor, 2549 Dunn Road, Rodriguezport, IA 39973",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Melissa Taylor",
-          "start": 12,
-          "end": 26
-        },
-        {
-          "type": "ADDRESS",
-          "value": "2549 Dunn Road, Rodriguezport, IA 39973",
-          "start": 28,
-          "end": 67
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_ffa623d0",
-      "text": "Contact Jacob Edwards (john10@example.net) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Jacob Edwards",
-          "start": 8,
-          "end": 21
-        },
-        {
-          "type": "EMAIL",
-          "value": "john10@example.net",
-          "start": 23,
-          "end": 41
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_fbe94499",
-      "text": "The customer's phone number is 270-983-4394. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "270-983-4394",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_a8e56e0c",
-      "text": "How should I structure a product roadmap?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_2053da42",
-      "text": "Our internal API is at https://internal.company.com/api/v2/address-section. Is it responding?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "INTERNAL_URL",
-          "value": "https://internal.company.com/api/v2/address-section",
-          "start": 23,
-          "end": 74
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_98549f22",
-      "text": "My email is riveraangela@example.com. Please send me the report.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "riveraangela@example.com",
-          "start": 12,
-          "end": 36
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_18d0752b",
-      "text": "Explain how photosynthesis works in simple terms.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_88bd6407",
-      "text": "How do I center a div in CSS?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_1a7f195b",
-      "text": "Contact Matthew Madden (gilbertwilliam@example.com) for the interview schedule.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Matthew Madden",
-          "start": 8,
-          "end": 22
-        },
-        {
-          "type": "EMAIL",
-          "value": "gilbertwilliam@example.com",
-          "start": 24,
-          "end": 50
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_8f10d33e",
-      "text": "SSN: 339-83-1296, DOB: 04/29/1983. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "339-83-1296",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "339-83-1296",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_1f33242d",
-      "text": "Bank account number: 4027526473, routing number: 841139461 for wire transfer.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "4027526473",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "4027526473",
-          "start": 21,
-          "end": 31
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "841139461",
-          "start": 49,
-          "end": 58
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "841139461",
-          "start": 49,
-          "end": 58
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_4ab7706e",
-      "text": "Look up employee id: 266071 in the HR system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "266071",
-          "start": 21,
-          "end": 27
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_7f54a511",
-      "text": "The customer's phone number is 425-604-1897. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "425-604-1897",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_87ea7ff5",
-      "text": "Go to https://corp.internal.net/wiki for the runbook.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
       "id": "tier0_3aa2e4f9",
       "text": "How do I cook pad thai?",
       "expected_tier": 0,
@@ -2505,22 +141,7 @@
       "category": "general"
     },
     {
-      "id": "tier2_90e0b95f",
-      "text": "The customer's phone number is 403-593-8916. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "403-593-8916",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_81d2c7de",
+      "id": "tier1_a8e56e0c",
       "text": "Visit https://private.company.internal/docs for documentation.",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
@@ -2528,146 +149,43 @@
       "category": "internal"
     },
     {
-      "id": "tier3_ccac2fb5",
-      "text": "Credit card 4132866788762387 expiring 08/33 with security code 796.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4132866788762387",
-          "start": 12,
-          "end": 28
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4132866788762387",
-          "start": 12,
-          "end": 28
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_2b2bb8e9",
-      "text": "The customer's phone number is 490-280-5105. Call them back.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PHONE",
-          "value": "490-280-5105",
-          "start": 31,
-          "end": 43
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_7922bac2",
-      "text": "Employee number: 674553 needs access to the system.",
+      "id": "tier1_fec21bbe",
+      "text": "Check https://internal.company.com/tickets/70686 for updates.",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "674553",
-          "start": 17,
-          "end": 23
-        }
-      ],
+      "entities": [],
       "category": "internal"
     },
     {
-      "id": "tier3_f55dce6d",
-      "text": "Wire transfer: account number 3783009621, routing 827072823, amount $50,000.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "3783009621",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "3783009621",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "827072823",
-          "start": 50,
-          "end": 59
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "827072823",
-          "start": 50,
-          "end": 59
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_be2d740a",
-      "text": "Our internal API is at https://internal.company.com/api/v2/scientist-long. Is it responding?",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "INTERNAL_URL",
-          "value": "https://internal.company.com/api/v2/scientist-long",
-          "start": 23,
-          "end": 73
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_4ac66780",
-      "text": "Tax filing for SSN 887-46-0158, taxpayer Ryan Harvey. Process refund.",
+      "id": "tier3_3d3f3799",
+      "text": "SSN: 573-77-5199, DOB: 07/17/1961. Verify identity for loan application.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
         {
           "type": "SSN",
-          "value": "887-46-0158",
-          "start": 19,
-          "end": 30
+          "value": "573-77-5199",
+          "start": 5,
+          "end": 16
         },
         {
           "type": "SSN",
-          "value": "887-46-0158",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ryan Harvey",
-          "start": 41,
-          "end": 52
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Ryan Harvey",
-          "start": 41,
-          "end": 52
+          "value": "573-77-5199",
+          "start": 5,
+          "end": 16
         }
       ],
       "category": "sensitive"
     },
     {
-      "id": "tier1_b5b453ca",
-      "text": "Employee id 563513 submitted a request.",
+      "id": "tier1_72d8567d",
+      "text": "Employee id 589710 submitted a request.",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
       "entities": [
         {
           "type": "EMPLOYEE_ID",
-          "value": "563513",
+          "value": "589710",
           "start": 12,
           "end": 18
         }
@@ -2675,14 +193,98 @@
       "category": "internal"
     },
     {
-      "id": "tier2_4e76833a",
-      "text": "The customer's phone number is 473-284-7955. Call them back.",
+      "id": "tier3_b963f37f",
+      "text": "Credit card 4637031459514036 expiring 04/26 with security code 4668.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
+      "entities": [
+        {
+          "type": "CREDIT_CARD",
+          "value": "4637031459514036",
+          "start": 12,
+          "end": 28
+        },
+        {
+          "type": "CREDIT_CARD",
+          "value": "4637031459514036",
+          "start": 12,
+          "end": 28
+        }
+      ],
+      "category": "sensitive"
+    },
+    {
+      "id": "tier3_63b4c08b",
+      "text": "Bank account number: 4034047118, routing number: 168965204 for wire transfer.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
+      "entities": [
+        {
+          "type": "BANK_ACCOUNT",
+          "value": "4034047118",
+          "start": 21,
+          "end": 31
+        },
+        {
+          "type": "BANK_ACCOUNT",
+          "value": "4034047118",
+          "start": 21,
+          "end": 31
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "168965204",
+          "start": 49,
+          "end": 58
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "168965204",
+          "start": 49,
+          "end": 58
+        }
+      ],
+      "category": "sensitive"
+    },
+    {
+      "id": "tier1_ff5e9ff0",
+      "text": "Employee id 774079 submitted a request.",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [
+        {
+          "type": "EMPLOYEE_ID",
+          "value": "774079",
+          "start": 12,
+          "end": 18
+        }
+      ],
+      "category": "internal"
+    },
+    {
+      "id": "tier2_f8e1daa7",
+      "text": "Send a follow-up email to hhoffman@example.org about the proposal.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "EMAIL",
+          "value": "hhoffman@example.org",
+          "start": 26,
+          "end": 46
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier2_cd5f4822",
+      "text": "The customer's phone number is 616-835-3532. Call them back.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "PHONE",
-          "value": "473-284-7955",
+          "value": "616-835-3532",
           "start": 31,
           "end": 43
         }
@@ -2690,243 +292,31 @@
       "category": "contact"
     },
     {
-      "id": "tier3_23ea7956",
-      "text": "Tax filing for SSN 245-40-1917, taxpayer Megan Edwards. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "245-40-1917",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "245-40-1917",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Megan Edwards",
-          "start": 41,
-          "end": 54
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Megan Edwards",
-          "start": 41,
-          "end": 54
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_7a4c75d4",
-      "text": "Access the project at https://intranet.corp.local/projects/cvld",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_00af5b3a",
-      "text": "Look up employee id: 751194 in the HR system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "751194",
-          "start": 21,
-          "end": 27
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier3_ad1db537",
-      "text": "Credit card 4892696253825294 expiring 02/29 with security code 481.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "CREDIT_CARD",
-          "value": "4892696253825294",
-          "start": 12,
-          "end": 28
-        },
-        {
-          "type": "CREDIT_CARD",
-          "value": "4892696253825294",
-          "start": 12,
-          "end": 28
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_eef16694",
-      "text": "Deliver to: Joshua Li, 2309 Brown Boulevard, Johnsonborough, AZ 26645",
+      "id": "tier2_90b2b633",
+      "text": "Reach out to Kathryn Farrell at 270-809-2113 or brianromero@example.org.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "PERSON_NAME",
-          "value": "Joshua Li",
-          "start": 12,
-          "end": 21
-        },
-        {
-          "type": "ADDRESS",
-          "value": "2309 Brown Boulevard, Johnsonborough, AZ 26645",
-          "start": 23,
-          "end": 69
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_e8e22743",
-      "text": "Send a follow-up email to hayesjeffrey@example.net about the proposal.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "hayesjeffrey@example.net",
-          "start": 26,
-          "end": 50
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier0_63f2ae24",
-      "text": "Write a short poem about space.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_d4ea120a",
-      "text": "The billing address is 5061 Hogan Street, West Williamport, NH 59734 for account holder Sonia Day.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Sonia Day",
-          "start": 88,
-          "end": 97
-        },
-        {
-          "type": "ADDRESS",
-          "value": "5061 Hogan Street, West Williamport, NH 59734",
-          "start": 23,
-          "end": 68
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier3_582b91ee",
-      "text": "Tax filing for SSN 329-31-4945, taxpayer Kyle Chambers. Process refund.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "329-31-4945",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "SSN",
-          "value": "329-31-4945",
-          "start": 19,
-          "end": 30
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Kyle Chambers",
-          "start": 41,
-          "end": 54
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Kyle Chambers",
-          "start": 41,
-          "end": 54
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier2_dc5be7d1",
-      "text": "Please email eevans@example.net with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "eevans@example.net",
+          "value": "Kathryn Farrell",
           "start": 13,
-          "end": 31
+          "end": 28
+        },
+        {
+          "type": "EMAIL",
+          "value": "brianromero@example.org",
+          "start": 48,
+          "end": 71
+        },
+        {
+          "type": "PHONE",
+          "value": "270-809-2113",
+          "start": 32,
+          "end": 44
         }
       ],
       "category": "contact"
-    },
-    {
-      "id": "tier3_ac2a4f71",
-      "text": "Wire transfer: account number 5151887478, routing 331009561, amount $50,000.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "5151887478",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "BANK_ACCOUNT",
-          "value": "5151887478",
-          "start": 30,
-          "end": 40
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "331009561",
-          "start": 50,
-          "end": 59
-        },
-        {
-          "type": "ROUTING_NUMBER",
-          "value": "331009561",
-          "start": 50,
-          "end": 59
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier1_575aed2c",
-      "text": "Access the project at https://intranet.corp.local/projects/ibqx",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier1_f3b1025b",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
     },
     {
       "id": "tier0_1a3d1fa7",
@@ -2937,43 +327,35 @@
       "category": "general"
     },
     {
-      "id": "tier1_95863a76",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_23377bbc",
-      "text": "The billing address is 6028 Smith Avenue, Henryborough, MA 64237 for account holder Angela Hansen.",
+      "id": "tier2_0f02bad0",
+      "text": "Ship the package to Clifford Ford at 341 Novak Drive, East Richard, NJ 28517.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "PERSON_NAME",
-          "value": "Angela Hansen",
-          "start": 84,
-          "end": 97
+          "value": "Clifford Ford",
+          "start": 20,
+          "end": 33
         },
         {
           "type": "ADDRESS",
-          "value": "6028 Smith Avenue, Henryborough, MA 64237",
-          "start": 23,
-          "end": 64
+          "value": "341 Novak Drive, East Richard, NJ 28517",
+          "start": 37,
+          "end": 76
         }
       ],
       "category": "contact"
     },
     {
-      "id": "tier1_9191b363",
-      "text": "The project id: WAM-610 deadline is approaching.",
+      "id": "tier1_01d74256",
+      "text": "The project id: PXC-921 deadline is approaching.",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
       "entities": [
         {
           "type": "PROJECT_CODE",
-          "value": "WAM-610",
+          "value": "PXC-921",
           "start": 16,
           "end": 23
         }
@@ -2981,35 +363,250 @@
       "category": "internal"
     },
     {
-      "id": "tier3_755cee2a",
-      "text": "SSN: 643-54-6147, DOB: 01/29/2005. Verify identity for loan application.",
+      "id": "tier0_815ef6d1",
+      "text": "Write a short poem about nature.",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier3_4797b2c9",
+      "text": "Bank account number: 6922713963, routing number: 130816384 for wire transfer.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
         {
-          "type": "SSN",
-          "value": "643-54-6147",
-          "start": 5,
-          "end": 16
+          "type": "BANK_ACCOUNT",
+          "value": "6922713963",
+          "start": 21,
+          "end": 31
         },
         {
-          "type": "SSN",
-          "value": "643-54-6147",
-          "start": 5,
-          "end": 16
+          "type": "BANK_ACCOUNT",
+          "value": "6922713963",
+          "start": 21,
+          "end": 31
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "130816384",
+          "start": 49,
+          "end": 58
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "130816384",
+          "start": 49,
+          "end": 58
         }
       ],
       "category": "sensitive"
     },
     {
-      "id": "tier1_20ac3703",
-      "text": "Look up employee id: 331251 in the HR system.",
+      "id": "tier1_5cec4eb5",
+      "text": "Access the project at https://intranet.corp.local/projects/amuf",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [],
+      "category": "internal"
+    },
+    {
+      "id": "tier2_9b3080d5",
+      "text": "The customer's phone number is 228-318-5279. Call them back.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "PHONE",
+          "value": "228-318-5279",
+          "start": 31,
+          "end": 43
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier0_96da1dac",
+      "text": "How should I structure a product roadmap?",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier0_ddd1dfb2",
+      "text": "How should I structure a product roadmap?",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier1_61b1cd22",
+      "text": "Access the project at https://intranet.corp.local/projects/kyrb",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [],
+      "category": "internal"
+    },
+    {
+      "id": "tier2_11c58ef0",
+      "text": "Send a follow-up email to kristinrodriguez@example.org about the proposal.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "EMAIL",
+          "value": "kristinrodriguez@example.org",
+          "start": 26,
+          "end": 54
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier0_ec1b8ca1",
+      "text": "Write a short poem about technology.",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier2_43e42caf",
+      "text": "My email is john62@example.net. Please send me the report.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "EMAIL",
+          "value": "john62@example.net",
+          "start": 12,
+          "end": 30
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier0_35a240ae",
+      "text": "Recommend some books about science fiction.",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier2_1b66b5a9",
+      "text": "The customer's phone number is 920-509-9666. Call them back.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "PHONE",
+          "value": "920-509-9666",
+          "start": 31,
+          "end": 43
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier2_688c7015",
+      "text": "My email is fletcheraaron@example.net. Please send me the report.",
+      "expected_tier": 2,
+      "tier_name": "CONFIDENTIAL",
+      "entities": [
+        {
+          "type": "EMAIL",
+          "value": "fletcheraaron@example.net",
+          "start": 12,
+          "end": 37
+        }
+      ],
+      "category": "contact"
+    },
+    {
+      "id": "tier3_d98868dd",
+      "text": "Please charge credit card number 4195471362797912 for the purchase.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
+      "entities": [
+        {
+          "type": "CREDIT_CARD",
+          "value": "4195471362797912",
+          "start": 33,
+          "end": 49
+        },
+        {
+          "type": "CREDIT_CARD",
+          "value": "4195471362797912",
+          "start": 33,
+          "end": 49
+        }
+      ],
+      "category": "sensitive"
+    },
+    {
+      "id": "tier1_ea1fca65",
+      "text": "Project code: CZU-410. What's the status?",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [
+        {
+          "type": "PROJECT_CODE",
+          "value": "CZU-410",
+          "start": 14,
+          "end": 21
+        }
+      ],
+      "category": "internal"
+    },
+    {
+      "id": "tier1_a4161293",
+      "text": "Employee number: 724834 needs access to the system.",
       "expected_tier": 1,
       "tier_name": "INTERNAL",
       "entities": [
         {
           "type": "EMPLOYEE_ID",
-          "value": "331251",
+          "value": "724834",
+          "start": 17,
+          "end": 23
+        }
+      ],
+      "category": "internal"
+    },
+    {
+      "id": "tier3_f2a03459",
+      "text": "Patient Sandra King, health insurance ID: JPI608482316, prescribed Metformin 10mg daily.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
+      "entities": [
+        {
+          "type": "PERSON_NAME",
+          "value": "Sandra King",
+          "start": 8,
+          "end": 19
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Sandra King",
+          "start": 8,
+          "end": 19
+        }
+      ],
+      "category": "sensitive"
+    },
+    {
+      "id": "tier1_8a0b3c33",
+      "text": "Look up employee id: 174441 in the HR system.",
+      "expected_tier": 1,
+      "tier_name": "INTERNAL",
+      "entities": [
+        {
+          "type": "EMPLOYEE_ID",
+          "value": "174441",
           "start": 21,
           "end": 27
         }
@@ -3017,174 +614,20 @@
       "category": "internal"
     },
     {
-      "id": "tier0_77d21e02",
-      "text": "What are the main differences between Python and winter?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier0_3fa7f104",
-      "text": "Summarize the history of the Renaissance.",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier3_bb134f02",
-      "text": "Patient Brandon Davis, health insurance ID: SIE176051319, prescribed Metformin 10mg daily.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Brandon Davis",
-          "start": 8,
-          "end": 21
-        },
-        {
-          "type": "PERSON_NAME",
-          "value": "Brandon Davis",
-          "start": 8,
-          "end": 21
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier3_b9aed8e4",
-      "text": "SSN: 403-79-4903, DOB: 04/05/1946. Verify identity for loan application.",
-      "expected_tier": 3,
-      "tier_name": "RESTRICTED",
-      "entities": [
-        {
-          "type": "SSN",
-          "value": "403-79-4903",
-          "start": 5,
-          "end": 16
-        },
-        {
-          "type": "SSN",
-          "value": "403-79-4903",
-          "start": 5,
-          "end": 16
-        }
-      ],
-      "category": "sensitive"
-    },
-    {
-      "id": "tier0_b41b3143",
-      "text": "What are best practices for code reviews?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier1_22f235f2",
-      "text": "Visit https://private.company.internal/docs for documentation.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [],
-      "category": "internal"
-    },
-    {
-      "id": "tier0_7b3a4e3e",
-      "text": "What's the weather like in North Sarabury during summer?",
-      "expected_tier": 0,
-      "tier_name": "PUBLIC",
-      "entities": [],
-      "category": "general"
-    },
-    {
-      "id": "tier2_92ec89af",
-      "text": "Ship the package to Brenda Lawson at 6033 Reyes Drive, New Ericmouth, MN 49261.",
+      "id": "tier2_0cd620c2",
+      "text": "Call Aaron Myers at 769-877-8973 to confirm the meeting.",
       "expected_tier": 2,
       "tier_name": "CONFIDENTIAL",
       "entities": [
         {
           "type": "PERSON_NAME",
-          "value": "Brenda Lawson",
-          "start": 20,
-          "end": 33
-        },
-        {
-          "type": "ADDRESS",
-          "value": "6033 Reyes Drive, New Ericmouth, MN 49261",
-          "start": 37,
-          "end": 78
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_112fa612",
-      "text": "The billing address is 6915 Blair Avenue, Ronaldview, MN 20507 for account holder Kristen Glenn.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Kristen Glenn",
-          "start": 82,
-          "end": 95
-        },
-        {
-          "type": "ADDRESS",
-          "value": "6915 Blair Avenue, Ronaldview, MN 20507",
-          "start": 23,
-          "end": 62
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier1_39820cff",
-      "text": "Employee id 932291 submitted a request.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
-      "entities": [
-        {
-          "type": "EMPLOYEE_ID",
-          "value": "932291",
-          "start": 12,
-          "end": 18
-        }
-      ],
-      "category": "internal"
-    },
-    {
-      "id": "tier2_585d3f86",
-      "text": "Please email moorekaren@example.org with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "EMAIL",
-          "value": "moorekaren@example.org",
-          "start": 13,
-          "end": 35
-        }
-      ],
-      "category": "contact"
-    },
-    {
-      "id": "tier2_82af085c",
-      "text": "Call Alex Nguyen at 647-308-4986 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
-      "entities": [
-        {
-          "type": "PERSON_NAME",
-          "value": "Alex Nguyen",
+          "value": "Aaron Myers",
           "start": 5,
           "end": 16
         },
         {
           "type": "PHONE",
-          "value": "647-308-4986",
+          "value": "769-877-8973",
           "start": 20,
           "end": 32
         }
@@ -3192,43 +635,61 @@
       "category": "contact"
     },
     {
-      "id": "tier2_70d9c9f8",
-      "text": "Please email swall@example.org with the meeting notes.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
+      "id": "tier3_46c8adfe",
+      "text": "Medical record MRN 81922443 for patient Joseph Coleman: Blood type O-, allergies: Latex.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
       "entities": [
         {
-          "type": "EMAIL",
-          "value": "swall@example.org",
-          "start": 13,
-          "end": 30
+          "type": "MRN",
+          "value": "81922443",
+          "start": 19,
+          "end": 27
+        },
+        {
+          "type": "MRN",
+          "value": "81922443",
+          "start": 19,
+          "end": 27
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Joseph Coleman",
+          "start": 40,
+          "end": 54
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Joseph Coleman",
+          "start": 40,
+          "end": 54
         }
       ],
-      "category": "contact"
+      "category": "sensitive"
     },
     {
-      "id": "tier1_9a6ec2f5",
-      "text": "Go to https://corp.internal.net/wiki for the runbook.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
+      "id": "tier0_11ce5dd2",
+      "text": "Explain the difference between REST and GraphQL.",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
       "entities": [],
-      "category": "internal"
+      "category": "general"
     },
     {
-      "id": "tier3_0328c136",
-      "text": "Please charge credit card number 4957199708704141 for the purchase.",
+      "id": "tier3_bbda0242",
+      "text": "Please charge credit card number 4699815148951688 for the purchase.",
       "expected_tier": 3,
       "tier_name": "RESTRICTED",
       "entities": [
         {
           "type": "CREDIT_CARD",
-          "value": "4957199708704141",
+          "value": "4699815148951688",
           "start": 33,
           "end": 49
         },
         {
           "type": "CREDIT_CARD",
-          "value": "4957199708704141",
+          "value": "4699815148951688",
           "start": 33,
           "end": 49
         }
@@ -3236,40 +697,99 @@
       "category": "sensitive"
     },
     {
-      "id": "tier2_f836f571",
-      "text": "Call Edward French at 334-811-7172 to confirm the meeting.",
-      "expected_tier": 2,
-      "tier_name": "CONFIDENTIAL",
+      "id": "tier3_473bd358",
+      "text": "Bank account number: 2982979741, routing number: 153992714 for wire transfer.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
       "entities": [
         {
-          "type": "PERSON_NAME",
-          "value": "Edward French",
-          "start": 5,
-          "end": 18
+          "type": "BANK_ACCOUNT",
+          "value": "2982979741",
+          "start": 21,
+          "end": 31
         },
         {
-          "type": "PHONE",
-          "value": "334-811-7172",
-          "start": 22,
-          "end": 34
+          "type": "BANK_ACCOUNT",
+          "value": "2982979741",
+          "start": 21,
+          "end": 31
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "153992714",
+          "start": 49,
+          "end": 58
+        },
+        {
+          "type": "ROUTING_NUMBER",
+          "value": "153992714",
+          "start": 49,
+          "end": 58
         }
       ],
-      "category": "contact"
+      "category": "sensitive"
     },
     {
-      "id": "tier1_4fa03f26",
-      "text": "Look up employee id: 219946 in the HR system.",
-      "expected_tier": 1,
-      "tier_name": "INTERNAL",
+      "id": "tier3_b27b3d90",
+      "text": "My social security number is 172-78-9950. Process my application.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
       "entities": [
         {
-          "type": "EMPLOYEE_ID",
-          "value": "219946",
-          "start": 21,
-          "end": 27
+          "type": "SSN",
+          "value": "172-78-9950",
+          "start": 29,
+          "end": 40
+        },
+        {
+          "type": "SSN",
+          "value": "172-78-9950",
+          "start": 29,
+          "end": 40
         }
       ],
-      "category": "internal"
+      "category": "sensitive"
+    },
+    {
+      "id": "tier0_371ecd7b",
+      "text": "What's the weather like in Port Lindachester during fall?",
+      "expected_tier": 0,
+      "tier_name": "PUBLIC",
+      "entities": [],
+      "category": "general"
+    },
+    {
+      "id": "tier3_5e781fd7",
+      "text": "Medical record MRN 49491631 for patient Meredith Hill: Blood type B-, allergies: Penicillin.",
+      "expected_tier": 3,
+      "tier_name": "RESTRICTED",
+      "entities": [
+        {
+          "type": "MRN",
+          "value": "49491631",
+          "start": 19,
+          "end": 27
+        },
+        {
+          "type": "MRN",
+          "value": "49491631",
+          "start": 19,
+          "end": 27
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Meredith Hill",
+          "start": 40,
+          "end": 53
+        },
+        {
+          "type": "PERSON_NAME",
+          "value": "Meredith Hill",
+          "start": 40,
+          "end": 53
+        }
+      ],
+      "category": "sensitive"
     }
   ]
 }
