@@ -477,9 +477,49 @@ pytest tests/unit/test_controller.py -v
 
 ### Grafana Overview Dashboard
 
-![Inference Sentinel Dashboard](docs/images/grafana-overview.png)
+![Inference Sentinel Dashboard](docs/images/generic-graphana02.png)
+![Inference Sentinel Controller Dashboard](docs/images/generic-graphana01.png)
 
 *Real-time metrics showing routing distribution, backend health, and latency comparison between cloud (Anthropic) and local (Ollama) inference.*
+
+## Grafana Dashboards
+
+### Overview Dashboard (`/d/sentinel-overview`)
+
+| Panel | Description |
+|-------|-------------|
+| **Total Request Rate** | Requests per second across all backends |
+| **TTFT p95 (Overall)** | 95th percentile Time to First Token |
+| **ITL p95 (Overall)** | 95th percentile Inter-Token Latency |
+| **Total Cost (USD)** | Cumulative cloud inference cost |
+| **TTFT by Model** | Time to First Token breakdown: gemma3:4b (🟢), mistral (🟡), claude (🟣), gemini (🔵) |
+| **ITL by Model** | Inter-Token Latency by model with p50/p95 percentiles |
+| **Route Distribution** | Local vs Cloud request volume over time |
+| **Requests by Model** | Request count per model |
+| **Backend Health** | Health status of each local endpoint (gemma, mistral) |
+| **Request Share by Model** | Pie chart of traffic distribution |
+| **Requests by Privacy Tier** | Distribution: Tier 0 (PUBLIC), Tier 1 (INTERNAL), Tier 2 (CONFIDENTIAL), Tier 3 (RESTRICTED) |
+
+### Controller Dashboard (`/d/sentinel-controller`)
+
+| Panel | Description |
+|-------|-------------|
+| **Similarity Score** | Local vs Cloud quality match (0-100%). Green ≥85%, Yellow ≥70%, Red <70% |
+| **Cost Savings** | USD saved by routing to local instead of cloud |
+| **Shadow Comparisons** | Number of shadow mode comparisons completed |
+| **Cloud Requests (Tier 0-1)** | Requests routed to cloud (low privacy tiers) |
+| **Similarity Over Time** | Quality trend with 85% threshold line |
+| **Latency Diff** | Local minus Cloud latency. Negative = local faster |
+| **Cumulative Cost Savings** | Running total of savings from local routing |
+| **Route Distribution** | Pie chart of local vs cloud routing |
+| **Shadow vs Cloud Request Rate** | Comparison throughput over time |
+
+### Interpreting the Metrics
+
+- **TTFT (Time to First Token)**: Measures model "thinking time" before streaming begins. Local models typically 500ms-3s, cloud models 100-500ms.
+- **ITL (Inter-Token Latency)**: Time between tokens during streaming. Lower = faster output. Target: <50ms.
+- **Similarity Score**: Semantic similarity between local and cloud responses. >85% indicates local quality is acceptable.
+- **Cost Savings**: Calculated as `cloud_cost - local_cost` for each request. Local inference is $0.
 
 ## Project Structure
 
