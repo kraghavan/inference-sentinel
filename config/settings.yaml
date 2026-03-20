@@ -1,0 +1,90 @@
+# inference-sentinel configuration
+
+env: development
+debug: true
+
+host: "0.0.0.0"
+port: 8000
+
+# Local inference backends
+local:
+  endpoints:
+    - name: gemma
+      host: host.docker.internal
+      port: 11434
+      model: "gemma3:4b"
+      priority: 1
+      enabled: true
+
+    - name: mistral
+      host: host.docker.internal
+      port: 11434
+      model: "mistral"
+      priority: 1
+      enabled: true
+
+  selection_strategy: round_robin
+  health_check_interval_seconds: 30
+  failover_enabled: true
+  timeout_seconds: 120
+
+# Cloud backends
+cloud:
+  primary: anthropic
+  fallback: google
+  anthropic_model: "claude-sonnet-4-20250514"
+  google_model: "gemini-2.0-flash"
+  timeout_seconds: 60
+
+# Cloud selection strategy
+cloud_selection:
+  strategy: round_robin
+  primary: anthropic
+  fallback: google
+  max_retries: 2
+  retry_delay_ms: 500
+
+# NER Classification
+ner:
+  enabled: true
+  model: fast
+  device: cpu
+  confidence_threshold: 0.7
+  skip_if_regex_tier_gte: 3
+
+# Shadow Mode
+shadow:
+  enabled: true
+  shadow_tiers: [0, 1]
+  sample_rate: 1.0
+  similarity_enabled: false
+  local_timeout_seconds: 60
+  store_responses: false
+
+# Closed-Loop Controller
+controller:
+  enabled: true
+  mode: observe
+  evaluation_interval_seconds: 60
+  window_seconds: 300
+  drift_threshold: 0.10
+  cost_savings_threshold_usd: 50.0
+
+# Session Management (One-Way Trapdoor)
+session:
+  enabled: true
+  ttl_seconds: 900
+  max_sessions: 10000
+  lock_threshold_tier: 2
+  buffer_size: 5
+  scrub_buffer: true
+  inject_context_on_handoff: true
+  capability_guardrail: true
+
+# Telemetry
+telemetry:
+  enabled: true
+  otlp_endpoint: "http://tempo:4317"
+  service_name: "inference-sentinel"
+  log_level: INFO
+  metrics_port: 9090

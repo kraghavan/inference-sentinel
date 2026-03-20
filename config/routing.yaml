@@ -1,0 +1,158 @@
+# Routing Configuration for inference-sentinel
+# This file controls how requests are routed between local and cloud backends
+
+# =============================================================================
+# Cloud Backend Selection
+# =============================================================================
+cloud:
+  # Selection strategy for cloud backends
+  # Options:
+  #   - primary_fallback: Try primary first, use fallback if fails
+  #   - round_robin: Alternate between Claude and Gemini
+  #   - cost_optimized: (future) Route based on cost
+  selection_strategy: round_robin
+  
+  # Primary cloud backend (used first in primary_fallback mode)
+  primary: anthropic
+  
+  # Fallback cloud backend (used if primary fails)
+  fallback: google
+  
+  # Retry configuration
+  max_retries: 2
+  retry_delay_ms: 500
+  
+  # Timeout before falling back to local
+  fallback_to_local_on_timeout: true
+
+# =============================================================================
+# Privacy-Based Routing Rules
+# =============================================================================
+routing:
+  # Default routing based on privacy tier
+  tier_defaults:
+    0:  # PUBLIC
+      route: cloud
+      override_allowed: true
+    1:  # INTERNAL
+      route: cloud
+      override_allowed: true
+    2:  # CONFIDENTIAL
+      route: local
+      override_allowed: true
+    3:  # RESTRICTED
+      route: local
+      override_allowed: false  # NEVER allow cloud for tier 3
+  
+  # Force local for specific entity types regardless of tier
+  force_local_entities:
+    - ssn
+    - credit_card
+    - bank_account
+    - health_record
+    - passport
+    - drivers_license
+
+# =============================================================================
+# Shadow Mode Configuration
+# =============================================================================
+shadow:
+  # Enable shadow mode (run local in background for cloud requests)
+  enabled: false
+  
+  # Which privacy tiers to shadow (only safe tiers)
+  shadow_tiers: [0, 1]
+  
+  # Sampling rate (0.0 to 1.0)
+  # 1.0 = shadow all eligible requests
+  # 0.1 = shadow 10% of eligible requests
+  sample_rate: 1.0
+  
+  # Output similarity scoring
+  similarity:
+    enabled: true
+    model: fast  # fast, balanced, accurate
+    device: cpu  # cpu, cuda, mps
+  
+  # Timeout for shadow local inference
+  local_timeout_seconds: 60.0
+  
+  # Store full responses (for debugging, memory heavy)
+  store_responses: false
+  max_stored_results: 1000
+
+# =============================================================================
+# NER Classification Configuration  
+# =============================================================================
+ner:
+  # Enable NER-based classification (in addition to regex)
+  enabled: true
+  
+  # Model selection: fast, accurate, multilingual
+  model: fast
+  
+  # Device: cpu, cuda, mps
+  device: cpu
+  
+  # Minimum confidence to consider an entity
+  confidence_threshold: 0.7
+  
+  # Only run NER if regex tier is below this threshold
+  # (tier 3 from regex skips NER since we already know to route local)
+  skip_if_regex_tier_gte: 3
+
+# =============================================================================
+# Performance Tuning
+# =============================================================================
+performance:
+  # Classification timeout (ms)
+  classification_timeout_ms: 100
+  
+  # Routing decision timeout (ms)  
+  routing_timeout_ms: 10
+  
+  # Health check interval (seconds)
+  health_check_interval_seconds: 30
+  
+  # Backend selection strategy for local
+  local_selection_strategy: priority  # priority, round_robin, latency_best
+
+# =============================================================================
+# Closed-Loop Controller Configuration
+# =============================================================================
+controller:
+  # Enable the controller
+  enabled: true
+  
+  # Controller mode
+  # Options:
+  #   - observe: Log recommendations only (no auto-action)
+  #   - auto: (future) Automatically apply routing changes
+  mode: observe
+  
+  # Evaluation interval (how often to check metrics)
+  evaluation_interval_seconds: 60
+  
+  # Rolling window for metric aggregation
+  window_seconds: 300  # 5 minutes
+  
+  # Per-tier quality thresholds
+  # These determine when the controller recommends routing to local
+  thresholds:
+    tier_0:
+      # Minimum average similarity score to recommend local routing
+      min_similarity: 0.85
+      # Minimum samples required before making recommendations
+      min_samples: 100
+    tier_1:
+      min_similarity: 0.80
+      min_samples: 100
+  
+  # Alert configuration
+  alerts:
+    # Alert if similarity drops by this percentage from previous evaluation
+    drift_threshold: 0.10  # 10%
+    
+    # Minimum cost savings (USD) to recommend routing change
+    # Even if quality threshold is met, won't recommend if savings are minimal
+    cost_savings_threshold_usd: 50.0

@@ -1,0 +1,182 @@
+services:
+  # ============== CORE APPLICATION ==============
+  sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"           # API + Metrics
+    environment:
+      - SENTINEL_ENV=development
+      - SENTINEL_DEBUG=true
+      - SENTINEL_HOST=0.0.0.0
+      - SENTINEL_PORT=8000
+      # Local backends - gemma3:4b + mistral round-robin on Mac Mini M4
+      # Both use native Ollama via host.docker.internal
+      - 'SENTINEL_LOCAL__ENDPOINTS=[{"name": "gemma", "host": "host.docker.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true}, {"name": "mistral", "host": "host.docker.internal", "port": 11434, "model": "mistral", "priority": 1, "enabled": true}]'
+      # NER Classification - ENABLED
+      - SENTINEL_NER__ENABLED=true
+      - SENTINEL_NER__MODEL=fast
+      - SENTINEL_NER__DEVICE=cpu
+      - SENTINEL_NER__CONFIDENCE_THRESHOLD=0.7
+      # Shadow Mode - ENABLED (for controller to work)
+      - SENTINEL_SHADOW__ENABLED=true
+      - SENTINEL_SHADOW__SHADOW_TIERS=[0,1]
+      - SENTINEL_SHADOW__SAMPLE_RATE=1.0
+      - SENTINEL_SHADOW__SIMILARITY_ENABLED=false
+      # Closed-Loop Controller - ENABLED in OBSERVE mode
+      - SENTINEL_CONTROLLER__ENABLED=true
+      - SENTINEL_CONTROLLER__MODE=observe
+      - SENTINEL_CONTROLLER__EVALUATION_INTERVAL_SECONDS=60
+      - SENTINEL_CONTROLLER__WINDOW_SECONDS=300
+      # Telemetry
+      - SENTINEL_TELEMETRY__OTLP_ENDPOINT=http://tempo:4317
+      - SENTINEL_TELEMETRY__SERVICE_NAME=inference-sentinel
+      - SENTINEL_TELEMETRY__LOG_LEVEL=INFO
+      # Cloud API keys (passed from host)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      # Session management (one-way trapdoor)
+      - SENTINEL_SESSION__ENABLED=true
+      - SENTINEL_SESSION__TTL_SECONDS=900
+      - SENTINEL_SESSION__LOCK_THRESHOLD_TIER=2
+      - SENTINEL_SESSION__BUFFER_SIZE=5
+      - SENTINEL_SESSION__CAPABILITY_GUARDRAIL=true
+      - SENTINEL_LOCAL__SELECTION_STRATEGY=round_robin
+    volumes:
+      - ./config:/home/sentinel/app/config:ro
+    depends_on:
+      prometheus:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sentinel-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ============== LOCAL INFERENCE ==============
+  # Only used if you don't have native Ollama installed
+  # Start with: docker-compose --profile containerized up -d
+  ollama:
+    profiles: ["containerized"]
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /bin/ollama serve &
+        sleep 10
+        echo "Pulling gemma3:4b model..."
+        /bin/ollama pull gemma3:4b
+        echo "Pulling mistral model..."
+        /bin/ollama pull mistral
+        echo "Models ready!"
+        wait
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q 'gemma3'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+    networks:
+      - sentinel-network
+
+  # ============== OBSERVABILITY ==============
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - sentinel-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - sentinel-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  tempo:
+    image: grafana/tempo:2.3.0
+    ports:
+      - "4317:4317"           # OTLP gRPC
+      - "4318:4318"           # OTLP HTTP
+      - "3200:3200"           # Tempo query
+    volumes:
+      - ./observability/tempo/tempo-config.yml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    networks:
+      - sentinel-network
+
+  grafana:
+    image: grafana/grafana:10.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=sentinel
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - sentinel-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  sentinel-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  grafana_data:
