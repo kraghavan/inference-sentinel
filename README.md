@@ -8,6 +8,9 @@
 
 ---
 
+## Blog About this work
+You can find a detailed description and attention to more architectural decisions in this blog of mine. I have also added some benchmarking results as a follow up post. https://kraghavan.github.io/
+
 ## What is this?
 
 inference-sentinel automatically routes LLM prompts to **local** or **cloud** inference based on privacy classification. Sensitive data stays on your hardware; safe queries leverage faster/cheaper cloud providers.
