@@ -1,0 +1,57 @@
+# ConfigMap for inference-sentinel configuration
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinel-config
+  namespace: inference-sentinel
+  labels:
+    app.kubernetes.io/name: inference-sentinel
+    app.kubernetes.io/component: config
+data:
+  # Core settings
+  SENTINEL_ENV: "development"
+  SENTINEL_DEBUG: "true"
+  SENTINEL_HOST: "0.0.0.0"
+  SENTINEL_PORT: "8000"
+
+  # Local backends - native Ollama on Mac Mini M4
+  # In minikube with Docker driver: host.minikube.internal resolves automatically
+  # In minikube with Hyperkit/VirtualBox: use 192.168.65.2 or run:
+  #   minikube ssh -- 'grep host.minikube.internal /etc/hosts'
+  SENTINEL_LOCAL__ENDPOINTS: |
+    [
+      {"name": "gemma", "host": "host.minikube.internal", "port": 11434, "model": "gemma3:4b", "priority": 1, "enabled": true},
+      {"name": "mistral", "host": "host.minikube.internal", "port": 11434, "model": "mistral", "priority": 1, "enabled": true}
+    ]
+  SENTINEL_LOCAL__SELECTION_STRATEGY: "round_robin"
+
+  # NER Classification
+  SENTINEL_NER__ENABLED: "true"
+  SENTINEL_NER__MODEL: "fast"
+  SENTINEL_NER__DEVICE: "cpu"
+  SENTINEL_NER__CONFIDENCE_THRESHOLD: "0.7"
+
+  # Shadow Mode
+  SENTINEL_SHADOW__ENABLED: "true"
+  SENTINEL_SHADOW__SHADOW_TIERS: "[0,1]"
+  SENTINEL_SHADOW__SAMPLE_RATE: "1.0"
+  SENTINEL_SHADOW__SIMILARITY_ENABLED: "false"
+
+  # Closed-Loop Controller
+  SENTINEL_CONTROLLER__ENABLED: "true"
+  SENTINEL_CONTROLLER__MODE: "observe"
+  SENTINEL_CONTROLLER__EVALUATION_INTERVAL_SECONDS: "60"
+  SENTINEL_CONTROLLER__WINDOW_SECONDS: "300"
+
+  # Telemetry - Tempo endpoint within cluster
+  SENTINEL_TELEMETRY__OTLP_ENDPOINT: "http://tempo.inference-sentinel.svc.cluster.local:4317"
+  SENTINEL_TELEMETRY__SERVICE_NAME: "inference-sentinel"
+  SENTINEL_TELEMETRY__LOG_LEVEL: "INFO"
+
+  # Session management
+  SENTINEL_SESSION__ENABLED: "true"
+  SENTINEL_SESSION__TTL_SECONDS: "900"
+  SENTINEL_SESSION__LOCK_THRESHOLD_TIER: "2"
+  SENTINEL_SESSION__BUFFER_SIZE: "5"
+  SENTINEL_SESSION__CAPABILITY_GUARDRAIL: "true"

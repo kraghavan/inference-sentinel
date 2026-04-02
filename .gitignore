@@ -213,3 +213,6 @@ src/sentinel/.DS_Store
 tests/.DS_Store
 *.pyc
 *.pyo
+
+ops/k8s/generate-dashboards-configmap.sh
+results*/

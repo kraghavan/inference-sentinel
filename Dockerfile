@@ -30,10 +30,9 @@ RUN pip install --upgrade pip && \
     google-generativeai>=0.4.0 \
     numpy>=1.24.0 \
     cachetools>=5.3.0 \
-    spacy>=3.7.0
-
-# Download spacy English model for NER
-RUN python -m spacy download en_core_web_sm
+    transformers>=4.37.0 \
+    torch>=2.2.0 \
+    sentencepiece>=0.1.99
 
 # Copy source code
 COPY src/ /app/src/

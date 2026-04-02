@@ -1,0 +1,56 @@
+# Ingress for inference-sentinel
+# Requires: minikube addons enable ingress
+#
+# Add to /etc/hosts:
+#   $(minikube ip) sentinel.local grafana.local prometheus.local
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentinel-ingress
+  namespace: inference-sentinel
+  labels:
+    app.kubernetes.io/name: inference-sentinel
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  ingressClassName: nginx
+  rules:
+    # Main API gateway
+    - host: sentinel.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sentinel
+                port:
+                  number: 8000
+
+    # Grafana dashboards
+    - host: grafana.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+
+    # Prometheus UI (optional, for debugging)
+    - host: prometheus.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
