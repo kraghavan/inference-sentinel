@@ -1,236 +1,350 @@
-# inference-sentinel Kubernetes Deployment
+# inference-sentinel
 
-Deploy inference-sentinel to minikube with full observability stack.
+**Privacy-aware LLM routing gateway** that classifies prompts by sensitivity and routes to local (Ollama) or cloud (Claude/Gemini) backends.
 
-## Prerequisites
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- [minikube](https://minikube.sigs.k8s.io/docs/start/) installed
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- Docker installed
-- Ollama running natively on your Mac Mini M4 (port 11434)
+## Overview
+
+inference-sentinel is a smart routing layer that sits between your application and LLM backends. It:
+
+1. **Classifies** incoming prompts into 4 privacy tiers (PUBLIC → RESTRICTED)
+2. **Routes** sensitive requests to local Ollama, non-sensitive to cloud APIs
+3. **Tracks** cost savings from local inference
+4. **Learns** via shadow mode comparison and closed-loop optimization
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Client    │────▶│ inference-sentinel│────▶│  Local (Ollama) │
+│ Application │     │    Classification │     │  gemma3:4b      │
+└─────────────┘     │    + Routing      │     │  mistral        │
+                    └────────┬──────────┘     └─────────────────┘
+                             │
+                             │ Tier 0-1 only
+                             ▼
+                    ┌─────────────────┐
+                    │  Cloud APIs     │
+                    │  Claude/Gemini  │
+                    └─────────────────┘
+```
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **4-Tier Privacy Classification** | PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED |
+| **Hybrid Detection** | Regex fast-path + BERT NER for ambiguous cases |
+| **Session Stickiness** | PII-triggered session locking with context handoff |
+| **Shadow Mode** | A/B comparison of local vs cloud quality |
+| **Closed-Loop Controller** | Auto-adjusts routing based on quality metrics |
+| **Full Observability** | Prometheus, Grafana, Loki, Tempo |
 
 ## Quick Start
 
-### 1. Start minikube
+### Prerequisites
+
+- Python 3.12+
+- Docker & Docker Compose
+- [Ollama](https://ollama.ai/) running locally with models:
+  ```bash
+  ollama pull gemma3:4b
+  ollama pull mistral
+  ```
+- API keys for cloud backends:
+  - `ANTHROPIC_API_KEY` (Claude)
+  - `GOOGLE_API_KEY` (Gemini)
+
+---
+
+## Deployment Options
+
+### Option 1: Docker Compose (Recommended for Development)
 
 ```bash
-# Start minikube with enough resources
-minikube start --cpus=4 --memory=8192 --driver=docker
+# Clone the repo
+git clone https://github.com/kraghavan/inference-sentinel.git
+cd inference-sentinel
 
-# Enable required addons
-minikube addons enable ingress
-minikube addons enable metrics-server
+# Set API keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GOOGLE_API_KEY="AIza..."
+
+# Deploy
+./deploy-docker.sh
+
+# Or with clean rebuild
+./deploy-docker.sh --clean --rebuild
 ```
 
-### 2. Build the Docker image
+**Flags:**
+| Flag | Description |
+|------|-------------|
+| `--clean` | Remove volumes, clear Prometheus data |
+| `--rebuild` | Force no-cache Docker build |
+| `--quick` | Skip health checks |
+
+**Access:**
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Sentinel API | http://localhost:8000 | - |
+| Grafana | http://localhost:3000 | admin / admin |
+| Prometheus | http://localhost:9090 | - |
+
+---
+
+### Option 2: Kubernetes (minikube)
+
+Best for testing production-like deployments on your local machine.
 
 ```bash
-# Point docker to minikube's daemon
-eval $(minikube docker-env)
+cd inference-sentinel
 
-# Build the image (from your inference-sentinel repo root)
-docker build -t inference-sentinel:latest .
+# Set API keys
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GOOGLE_API_KEY="AIza..."
 
-# Verify
-docker images | grep inference-sentinel
+# Deploy to minikube (starts cluster if needed)
+./ops/k8s/deploy.sh
 ```
 
-### 3. Configure secrets
+**What it does:**
+1. Starts minikube (4 CPUs, 8GB RAM)
+2. Builds Docker image inside minikube
+3. Deploys sentinel + full observability stack
+4. Configures secrets from environment variables
+5. Provisions Grafana dashboards
 
+**Access via port-forward:**
 ```bash
-# Option A: Create secret from command line (recommended)
-kubectl create namespace inference-sentinel
-
-kubectl create secret generic sentinel-secrets \
-  --from-literal=ANTHROPIC_API_KEY='sk-ant-your-key-here' \
-  --from-literal=GOOGLE_API_KEY='your-google-key-here' \
-  -n inference-sentinel
-
-# Option B: Edit secrets.yaml and base64 encode your keys
-# echo -n 'sk-ant-xxx' | base64
-# Then: kubectl apply -f secrets.yaml
+kubectl port-forward -n inference-sentinel svc/sentinel 8000:8000 &
+kubectl port-forward -n inference-sentinel svc/grafana 3000:3000 &
 ```
-
-### 4. Deploy everything
-
-```bash
-# Deploy with kustomize
-kubectl apply -k .
-
-# Or apply individually
-kubectl apply -f namespace.yaml
-kubectl apply -f configmap.yaml
-kubectl apply -f pvcs.yaml
-kubectl apply -f prometheus.yaml
-kubectl apply -f loki.yaml
-kubectl apply -f tempo.yaml
-kubectl apply -f grafana.yaml
-kubectl apply -f sentinel.yaml
-kubectl apply -f ingress.yaml
-```
-
-### 5. Configure /etc/hosts
-
-```bash
-# Get minikube IP
-minikube ip
-
-# Add to /etc/hosts (replace with your minikube IP)
-echo "$(minikube ip) sentinel.local grafana.local prometheus.local" | sudo tee -a /etc/hosts
-```
-
-### 6. Verify deployment
-
-```bash
-# Check all pods are running
-kubectl get pods -n inference-sentinel
-
-# Expected output:
-# NAME                          READY   STATUS    RESTARTS   AGE
-# sentinel-xxx                  1/1     Running   0          1m
-# prometheus-xxx                1/1     Running   0          1m
-# grafana-xxx                   1/1     Running   0          1m
-# loki-xxx                      1/1     Running   0          1m
-# tempo-xxx                     1/1     Running   0          1m
-
-# Check services
-kubectl get svc -n inference-sentinel
-
-# Check ingress
-kubectl get ingress -n inference-sentinel
-```
-
-### 7. Test the gateway
-
-```bash
-# Health check
-curl http://sentinel.local/health
-
-# Test inference (PUBLIC tier - goes to cloud)
-curl -X POST http://sentinel.local/v1/inference \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "What is the capital of France?"}'
-
-# Test inference (RESTRICTED tier - goes to local Ollama)
-curl -X POST http://sentinel.local/v1/inference \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "My SSN is 123-45-6789, what should I do?"}'
-```
-
-## Access URLs
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Sentinel API** | http://sentinel.local | - |
-| **Grafana** | http://grafana.local | admin / sentinel |
-| **Prometheus** | http://prometheus.local | - |
+| Sentinel API | http://localhost:8000 | - |
+| Grafana | http://localhost:3000 | admin / sentinel |
+| Prometheus | http://localhost:9090 | - |
+
+**Monitoring with k9s:**
+```bash
+k9s -n inference-sentinel
+```
+
+See [ops/k8s/README.md](ops/k8s/README.md) for detailed K8s documentation.
+
+---
+
+## Usage
+
+### Health Check
+
+```bash
+curl http://localhost:8000/health
+```
+
+### Inference (Auto-Routing)
+
+```bash
+# PUBLIC tier → routes to cloud
+curl -X POST http://localhost:8000/v1/inference \
+  -H "Content-Type: application/json" \
+  -d '{"model":"auto","messages":[{"role":"user","content":"What is the capital of France?"}]}'
+
+# RESTRICTED tier → routes to local Ollama
+curl -X POST http://localhost:8000/v1/inference \
+  -H "Content-Type: application/json" \
+  -d '{"model":"auto","messages":[{"role":"user","content":"My SSN is 123-45-6789"}]}'
+```
+
+### Classification Only
+
+```bash
+curl -X POST http://localhost:8000/v1/classify \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Send payment to account 1234567890"}'
+```
+
+### Response Format
+
+```json
+{
+  "id": "sentinel-abc123",
+  "choices": [{
+    "message": {"role": "assistant", "content": "..."},
+    "finish_reason": "stop"
+  }],
+  "sentinel": {
+    "tier": 3,
+    "tier_label": "RESTRICTED",
+    "endpoint": "local",
+    "backend": "gemma",
+    "entities_detected": ["ssn"],
+    "classification_latency_ms": 0.12,
+    "session_state": "LOCAL_LOCKED"
+  }
+}
+```
+
+## Privacy Tiers
+
+| Tier | Label | Examples | Routing |
+|------|-------|----------|---------|
+| 0 | PUBLIC | General questions, public info | Cloud |
+| 1 | INTERNAL | Project codes, internal URLs | Cloud |
+| 2 | CONFIDENTIAL | Email, phone, address | Local (default) |
+| 3 | RESTRICTED | SSN, credit card, health records | Local (forced) |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         minikube cluster                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐       │
-│   │   Ingress   │────▶│  sentinel   │────▶│ Prometheus  │       │
-│   │   (nginx)   │     │   :8000     │     │   :9090     │       │
-│   └─────────────┘     └──────┬──────┘     └─────────────┘       │
-│                              │                                    │
-│         ┌────────────────────┼────────────────────┐              │
-│         │                    │                    │              │
-│         ▼                    ▼                    ▼              │
-│   ┌───────────┐       ┌───────────┐       ┌───────────┐         │
-│   │   Tempo   │       │   Loki    │       │  Grafana  │         │
-│   │   :4317   │       │   :3100   │       │   :3000   │         │
-│   └───────────┘       └───────────┘       └───────────┘         │
-│                                                                   │
-└───────────────────────────────┬───────────────────────────────────┘
-                                │
-                                │ host.minikube.internal:11434
-                                ▼
-                    ┌───────────────────────┐
-                    │   Mac Mini M4 Ollama  │
-                    │   gemma3:4b + mistral │
-                    └───────────────────────┘
+src/sentinel/
+├── main.py                 # FastAPI application
+├── classification/
+│   ├── hybrid.py           # Regex + NER pipeline
+│   ├── patterns.py         # Regex patterns
+│   └── ner_classifier.py   # BERT NER model
+├── backends/
+│   ├── manager.py          # Backend orchestration
+│   ├── ollama.py           # Local inference
+│   ├── anthropic.py        # Claude API
+│   └── google.py           # Gemini API
+├── session/
+│   └── manager.py          # Session stickiness
+├── shadow/
+│   └── runner.py           # A/B comparison
+├── controller/
+│   └── __init__.py         # Closed-loop optimization
+└── telemetry/
+    └── __init__.py         # Logging & tracing
 ```
 
-## Troubleshooting
+## Observability
 
-### Pods not starting
+### Grafana Dashboards
+
+| Dashboard | Description |
+|-----------|-------------|
+| **Overview** | Request rates, latency, routing distribution, cost savings |
+| **Controller** | Shadow comparison, similarity scores, recommendations |
+
+### Key Metrics
+
+| Metric | Description |
+|--------|-------------|
+| `sentinel_requests_total` | Total requests by tier and endpoint |
+| `sentinel_classification_seconds` | Classification latency histogram |
+| `sentinel_inference_seconds` | End-to-end latency histogram |
+| `sentinel_cost_dollars` | Estimated API costs |
+| `sentinel_shadow_similarity` | Local vs cloud quality score |
+
+## Benchmarking
 
 ```bash
-# Check pod status
-kubectl describe pod -n inference-sentinel <pod-name>
+# Generate test data and run all experiments
+python -m benchmarks.harness --generate --count 200 --experiment all --ner
 
-# Check logs
-kubectl logs -n inference-sentinel <pod-name>
+# Generate markdown report with charts
+python -m benchmarks.report
+
+# Individual experiments:
+python -m benchmarks.harness --experiment classification --ner
+python -m benchmarks.harness --experiment routing
+python -m benchmarks.harness --experiment cost
+python -m benchmarks.harness --experiment controller
+python -m benchmarks.harness --experiment session
 ```
 
-### Can't reach Ollama from sentinel pod
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SENTINEL_NER_ENABLED` | `true` | Enable BERT NER classifier |
+| `SENTINEL_NER_MODEL` | `fast` | NER model: fast, accurate, multilingual |
+| `SENTINEL_SHADOW_ENABLED` | `true` | Enable shadow mode A/B comparison |
+| `SENTINEL_CONTROLLER_ENABLED` | `true` | Enable closed-loop controller |
+| `SENTINEL_CONTROLLER_MODE` | `observe` | Controller mode: observe, recommend, auto |
+| `SENTINEL_SESSION__ENABLED` | `true` | Enable session stickiness |
+| `SENTINEL_SESSION__TTL_SECONDS` | `900` | Session timeout (15 min) |
+| `SENTINEL_LOCAL_ENDPOINTS` | `gemma,mistral` | Ollama models to use |
+| `SENTINEL_CLOUD_PRIMARY` | `anthropic` | Primary cloud backend |
+| `SENTINEL_CLOUD_FALLBACK` | `google` | Fallback cloud backend |
+
+### Routing Config
+
+Edit `config/routing.yaml`:
+
+```yaml
+tiers:
+  0:  # PUBLIC
+    allow_cloud: true
+    prefer_local: false
+  1:  # INTERNAL
+    allow_cloud: true
+    prefer_local: false
+  2:  # CONFIDENTIAL
+    allow_cloud: false
+    prefer_local: true
+  3:  # RESTRICTED
+    allow_cloud: false
+    prefer_local: true
+    force_local: true
+```
+
+## Project Structure
+
+```
+inference-sentinel/
+├── src/sentinel/           # Main application code
+├── benchmarks/             # Benchmark harness & reports
+├── config/                 # Routing configuration
+├── observability/
+│   └── grafana/
+│       └── dashboards/     # Grafana dashboard JSON
+├── ops/
+│   └── k8s/                # Kubernetes manifests
+│       ├── deploy.sh       # K8s deployment script
+│       ├── kustomization.yaml
+│       └── *.yaml          # K8s resources
+├── deploy-docker.sh        # Docker Compose deployment
+├── docker-compose.yml
+└── Dockerfile
+```
+
+## Development
 
 ```bash
-# Test connectivity from inside the cluster
-kubectl exec -it -n inference-sentinel deploy/sentinel -- curl http://host.minikube.internal:11434/api/tags
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
 
-# If that fails, try with host network (temporary debug)
-# Or use minikube tunnel in another terminal
-minikube tunnel
+# Install dependencies
+pip install -e ".[dev,ner]"
+
+# Run tests
+pytest
+
+# Run locally (development mode)
+uvicorn sentinel.main:app --reload
 ```
 
-### Ingress not working
+## Roadmap
 
-```bash
-# Check ingress controller
-kubectl get pods -n ingress-nginx
+- [x] Phase 1: Privacy classification (v0.1.0)
+- [x] Phase 2: Cloud backends & routing (v0.2.0)
+- [x] Phase 3: Shadow mode & NER (v0.3.0)
+- [x] Phase 4: Closed-loop controller (v0.4.0)
+- [x] Phase 5: Session stickiness (v0.5.0)
+- [x] Phase 6: Kubernetes deployment (v0.6.0)
+- [ ] Phase 7: Helm charts, production hardening
 
-# Check ingress status
-kubectl describe ingress -n inference-sentinel sentinel-ingress
+## License
 
-# Alternative: use port-forward
-kubectl port-forward -n inference-sentinel svc/sentinel 8000:8000
-```
+MIT License - see [LICENSE](LICENSE) for details.
 
-### Reset everything
+## Author
 
-```bash
-# Delete all resources
-kubectl delete -k .
-
-# Or delete namespace (removes everything)
-kubectl delete namespace inference-sentinel
-
-# Delete PVCs if you want fresh data
-kubectl delete pvc --all -n inference-sentinel
-```
-
-## Resource Usage
-
-| Component | Memory Request | Memory Limit | CPU Request | CPU Limit |
-|-----------|----------------|--------------|-------------|-----------|
-| sentinel | 512Mi | 2Gi | 250m | 1000m |
-| prometheus | 256Mi | 512Mi | 100m | 500m |
-| grafana | 128Mi | 256Mi | 50m | 250m |
-| loki | 128Mi | 256Mi | 50m | 250m |
-| tempo | 128Mi | 256Mi | 50m | 250m |
-
-**Total:** ~1.2GB memory requested, ~3.3GB limit
-
-## Storage (PVCs)
-
-| Component | Size |
-|-----------|------|
-| prometheus-data | 1Gi |
-| grafana-data | 500Mi |
-| loki-data | 1Gi |
-| tempo-data | 1Gi |
-
-**Total:** 3.5GB (under 5GB as specified)
-
-## Notes
-
-- The sentinel image must be built inside minikube's Docker environment (`eval $(minikube docker-env)`)
-- Ollama runs natively on your Mac and is accessed via `host.minikube.internal:11434`
-- Cloud API keys are stored in a Kubernetes Secret
-- All observability data persists across pod restarts via PVCs
-- Default Grafana credentials: `admin` / `sentinel`
+**Karthika Raghavan** - [LinkedIn](https://linkedin.com/in/karthikaraghavan) | [GitHub](https://github.com/kraghavan)
