@@ -7,8 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Phase 7: Helm charts, production security hardening, CI/CD pipelines
+
+---
+
+## [0.6.0] - 2026-04-02
+
 ### Added
-- Phase 6: Kubernetes manifests, security hardening, CI/CD (planned)
+- **Kubernetes Deployment**: Full minikube deployment with observability stack
+  - Kustomize-based manifests in `ops/k8s/`
+  - Automated `deploy.sh` script with env var secrets injection
+  - Namespace isolation (`inference-sentinel`)
+  - Resource limits and PVC storage (3.5GB total)
+  - Ingress configuration for `sentinel.local`, `grafana.local`, `prometheus.local`
+- **Docker Compose Deployment Script**: `deploy-docker.sh` with flags
+  - `--clean`: Remove volumes, clear stale metrics
+  - `--rebuild`: Force no-cache build
+  - `--quick`: Skip health checks
+  - Ollama connectivity check
+  - Health checks for all services
+- **Grafana Dashboard Provisioning**: Auto-loaded via ConfigMap
+  - Overview dashboard (request rates, latency, routing, costs)
+  - Controller dashboard (shadow comparison, similarity, recommendations)
+- **NER Model Documentation**: Detailed analysis of `dslim/bert-base-NER`
+  - 12-layer BERT, ~110M params, ~433MB
+  - CoNLL-2003 trained (PER, ORG, LOC, MISC)
+  - Documented limitations for domain-specific entities (health insurance IDs)
+
+### Changed
+- **Dockerfile**: Replaced spaCy with HuggingFace Transformers
+  - Removed: `spacy>=3.7.0`, `en_core_web_sm` model download
+  - Added: `transformers>=4.37.0`, `torch>=2.2.0`, `sentencepiece>=0.1.99`
+- Secrets now injected from environment variables (not stored in YAML)
+- Grafana default password: `sentinel` (K8s), `admin` (Docker Compose)
+
+### Fixed
+- Grafana dashboard provisioning (was showing placeholder instead of actual dashboards)
+- Minikube orphaned container cleanup (`minikube-preload-sidecar` issue)
+- Deploy script idempotency with `--dry-run=client -o yaml | kubectl apply -f -`
+
+### Documentation
+- Updated README with both Docker Compose and Kubernetes deployment options
+- Added deployment script documentation
+- K8s-specific README in `ops/k8s/README.md`
 
 ---
 
@@ -71,8 +113,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cost savings calculation
   - Admin endpoints: `/admin/shadow/metrics`, `/admin/shadow/results`
 - **NER Classifier**: Named entity recognition for ambiguous PII
-  - Model: `dslim/bert-base-NER`
+  - Model: `dslim/bert-base-NER` (HuggingFace Transformers)
   - Hybrid pipeline: regex fast-pass → NER fallback
+  - Configurable confidence threshold
 - Full observability stack:
   - Prometheus metrics with detailed histograms
   - Grafana dashboards (Overview, Privacy, Cost)
@@ -126,12 +169,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 0.6.0 | 2026-04-02 | Kubernetes deployment, deploy scripts, NER model fix |
 | 0.5.0 | 2026-03-19 | Session stickiness, context handoff |
 | 0.4.0 | 2026-03-15 | Closed-loop controller, hot reload, round-robin |
 | 0.3.0 | 2026-03-10 | Shadow mode, NER classifier, observability |
 | 0.2.0 | 2026-03-05 | Cloud backends, tier-based routing |
 | 0.1.0 | 2026-03-01 | Initial release, classification, Ollama |
 
+[Unreleased]: https://github.com/kraghavan/inference-sentinel/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kraghavan/inference-sentinel/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kraghavan/inference-sentinel/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kraghavan/inference-sentinel/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/kraghavan/inference-sentinel/compare/v0.2.0...v0.3.0

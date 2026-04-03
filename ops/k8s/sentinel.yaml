@@ -1,0 +1,96 @@
+# Deployment for inference-sentinel gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel
+  namespace: inference-sentinel
+  labels:
+    app.kubernetes.io/name: sentinel
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel
+  template:
+    metadata:
+      labels:
+        app: sentinel
+        app.kubernetes.io/name: sentinel
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: sentinel
+          # Build and push to local minikube registry:
+          # eval $(minikube docker-env)
+          # docker build -t inference-sentinel:latest .
+          image: inference-sentinel:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: sentinel-config
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sentinel-secrets
+                  key: ANTHROPIC_API_KEY
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sentinel-secrets
+                  key: GOOGLE_API_KEY
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      # Note: In minikube, to access host machine use one of these methods:
+      # 1. minikube ssh -- 'grep host.minikube.internal /etc/hosts' to get the IP
+      # 2. Or use: minikube ssh -- 'cat /etc/hosts | grep host'
+      # The host IP is typically 192.168.49.1 or 192.168.65.2 depending on driver
+---
+# Service for inference-sentinel
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel
+  namespace: inference-sentinel
+  labels:
+    app.kubernetes.io/name: sentinel
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: sentinel

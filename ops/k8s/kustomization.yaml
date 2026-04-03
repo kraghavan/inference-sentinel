@@ -1,0 +1,24 @@
+# Kustomization for inference-sentinel
+# Deploy with: kubectl apply -k .
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: inference-sentinel
+
+resources:
+  - namespace.yaml
+  # - secrets.yaml <-- add this secrets if it has actual values and dont commit such a file with your real token values. 
+  - configmap.yaml
+  - pvcs.yaml
+  - sentinel.yaml
+  - prometheus.yaml
+  - loki.yaml
+  - tempo.yaml
+  - grafana.yaml
+  - grafana-dashboards-configmap.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: inference-sentinel
+  app.kubernetes.io/managed-by: kustomize

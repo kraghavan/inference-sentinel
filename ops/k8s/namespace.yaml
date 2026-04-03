@@ -1,0 +1,8 @@
+# Namespace for inference-sentinel
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inference-sentinel
+  labels:
+    app.kubernetes.io/name: inference-sentinel
+    app.kubernetes.io/part-of: inference-sentinel
