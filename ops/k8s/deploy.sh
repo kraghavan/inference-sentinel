@@ -10,14 +10,29 @@ echo "============================================"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Get script directory (ops/k8s/) and repo root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+DASHBOARDS_DIR="${REPO_ROOT}/observability/grafana/dashboards"
 
 echo "Script directory: ${SCRIPT_DIR}"
 echo "Repo root: ${REPO_ROOT}"
+echo "Dashboards directory: ${DASHBOARDS_DIR}"
+
+# Validate required env vars upfront
+if [[ -z "${ANTHROPIC_API_KEY}" ]] || [[ -z "${GOOGLE_API_KEY}" ]]; then
+    echo -e "${RED}❌ ERROR: ANTHROPIC_API_KEY and GOOGLE_API_KEY must be set${NC}"
+    echo ""
+    echo "Export them first:"
+    echo "  export ANTHROPIC_API_KEY='sk-ant-...'"
+    echo "  export GOOGLE_API_KEY='AIza...'"
+    echo ""
+    echo "Or run inline:"
+    echo "  ANTHROPIC_API_KEY='...' GOOGLE_API_KEY='...' ./ops/k8s/deploy.sh"
+    exit 1
+fi
 
 # Cleanup function for failed/orphaned minikube resources
 cleanup_minikube() {
@@ -51,7 +66,7 @@ fi
 # Clean up any orphaned containers BEFORE checking status
 cleanup_minikube
 
-# Check minikube status properly
+# Check minikube status
 echo -e "\n${YELLOW}Checking minikube status...${NC}"
 MINIKUBE_STATUS=$(minikube status --format='{{.Host}}' 2>/dev/null || echo "None")
 echo "Current minikube status: $MINIKUBE_STATUS"
@@ -96,95 +111,77 @@ else
     exit 1
 fi
 
-# Create namespace
+# Create namespace first
 echo -e "\n${YELLOW}Creating namespace...${NC}"
 kubectl apply -f "${SCRIPT_DIR}/namespace.yaml"
 
-# Generate dashboards ConfigMap from JSON files (before main deploy)
+# Create Grafana dashboards ConfigMap from observability directory
 echo -e "\n${YELLOW}Creating Grafana dashboards ConfigMap...${NC}"
-if [ -f "${SCRIPT_DIR}/overview.json" ] && [ -f "${SCRIPT_DIR}/controller.json" ]; then
+if [ -f "${DASHBOARDS_DIR}/overview.json" ] && [ -f "${DASHBOARDS_DIR}/controller.json" ]; then
     kubectl create configmap grafana-dashboards \
-        --from-file="${SCRIPT_DIR}/overview.json" \
-        --from-file="${SCRIPT_DIR}/controller.json" \
+        --from-file="${DASHBOARDS_DIR}/overview.json" \
+        --from-file="${DASHBOARDS_DIR}/controller.json" \
         -n inference-sentinel \
         --dry-run=client -o yaml | kubectl apply -f -
     echo -e "${GREEN}✅ Dashboards ConfigMap created${NC}"
 else
-    echo -e "${YELLOW}⚠️  Dashboard JSON files not found, creating placeholder...${NC}"
-    echo "   Place overview.json and controller.json in ${SCRIPT_DIR}"
-    kubectl create configmap grafana-dashboards \
-        --from-literal=_placeholder=true \
-        -n inference-sentinel \
-        --dry-run=client -o yaml | kubectl apply -f -
+    echo -e "${RED}❌ Dashboard JSON files not found in ${DASHBOARDS_DIR}${NC}"
+    echo "   Expected: overview.json and controller.json"
+    exit 1
 fi
 
-# Create secrets from environment variables
-if ! kubectl get secret sentinel-secrets -n inference-sentinel &> /dev/null; then
-    echo -e "\n${YELLOW}Creating secrets from environment variables...${NC}"
-    
-    # Check if env vars are set
-    if [[ -z "${ANTHROPIC_API_KEY}" ]] || [[ -z "${GOOGLE_API_KEY}" ]]; then
-        echo -e "${RED}❌ ERROR: ANTHROPIC_API_KEY and GOOGLE_API_KEY must be set${NC}"
-        echo ""
-        echo "Export them first:"
-        echo "  export ANTHROPIC_API_KEY='sk-ant-...'"
-        echo "  export GOOGLE_API_KEY='AIza...'"
-        echo ""
-        echo "Or run inline:"
-        echo "  ANTHROPIC_API_KEY='sk-ant-...' GOOGLE_API_KEY='AIza...' ./ops/k8s/deploy.sh"
-        exit 1
-    fi
-    
-    kubectl create secret generic sentinel-secrets \
-        --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
-        --from-literal=GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
-        -n inference-sentinel
-    echo -e "${GREEN}✅ Secrets created from environment variables${NC}"
-else
-    echo -e "${GREEN}✅ Secrets already exist${NC}"
-fi
-
-# Deploy with kustomize
-echo -e "\n${YELLOW}Deploying all resources...${NC}"
+# Deploy with kustomize (this applies secrets.yaml with empty values)
+echo -e "\n${YELLOW}Deploying all resources with kustomize...${NC}"
 kubectl apply -k "${SCRIPT_DIR}"
+
+# Override secrets with actual values from env vars (AFTER kustomize)
+echo -e "\n${YELLOW}Updating secrets from environment variables...${NC}"
+kubectl create secret generic sentinel-secrets \
+    --from-literal=ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
+    --from-literal=GOOGLE_API_KEY="${GOOGLE_API_KEY}" \
+    -n inference-sentinel \
+    --dry-run=client -o yaml | kubectl apply -f -
+echo -e "${GREEN}✅ Secrets updated${NC}"
+
+# Restart sentinel to pick up new secrets
+kubectl rollout restart deployment sentinel -n inference-sentinel
 
 # Wait for pods
 echo -e "\n${YELLOW}Waiting for pods to be ready...${NC}"
 kubectl wait --for=condition=ready pod -l app=sentinel -n inference-sentinel --timeout=120s || true
 kubectl wait --for=condition=ready pod -l app=prometheus -n inference-sentinel --timeout=60s || true
 kubectl wait --for=condition=ready pod -l app=grafana -n inference-sentinel --timeout=60s || true
+kubectl wait --for=condition=ready pod -l app=loki -n inference-sentinel --timeout=60s || true
+kubectl wait --for=condition=ready pod -l app=tempo -n inference-sentinel --timeout=60s || true
 
 # Get minikube IP
 MINIKUBE_IP=$(minikube ip)
 
-# Get host IP for Ollama access
-HOST_IP=$(minikube ssh -- 'grep host.minikube.internal /etc/hosts 2>/dev/null | awk "{print \$1}"' 2>/dev/null || echo "unknown")
-
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
 echo ""
+echo "============================================"
+echo "ACCESS"
+echo "============================================"
+echo ""
+echo "Port-forward (recommended):"
+echo "  kubectl port-forward -n inference-sentinel svc/sentinel 8000:8000 &"
+echo "  kubectl port-forward -n inference-sentinel svc/grafana 3000:3000 &"
+echo ""
+echo "Then access:"
+echo "  🌐 Sentinel API:  http://localhost:8000"
+echo "  📊 Grafana:       http://localhost:3000 (admin/sentinel)"
+echo ""
+echo "Test:"
+echo "  curl http://localhost:8000/health"
+echo ""
+echo "============================================"
+echo "ALTERNATIVE: Ingress (requires tunnel)"
 echo "============================================"
 echo "Add to /etc/hosts:"
 echo "  ${MINIKUBE_IP} sentinel.local grafana.local prometheus.local"
 echo ""
-echo "Host machine IP (for Ollama): ${HOST_IP}"
-echo "  If Ollama connection fails, update configmap:"
-echo "  kubectl edit configmap sentinel-config -n inference-sentinel"
-echo "  Replace 'host.minikube.internal' with '${HOST_IP}'"
+echo "Run: minikube tunnel"
 echo ""
-echo "Access URLs (run 'minikube tunnel' first for ingress):"
-echo "  🌐 Sentinel API:  http://sentinel.local"
-echo "  📊 Grafana:       http://grafana.local (admin/sentinel)"
-echo "  📈 Prometheus:    http://prometheus.local"
-echo ""
-echo "Or use port-forward directly:"
-echo "  kubectl port-forward -n inference-sentinel svc/grafana 3000:3000 &"
-echo "  kubectl port-forward -n inference-sentinel svc/sentinel 8000:8000 &"
-echo ""
-echo "Test command:"
-echo "  curl http://sentinel.local/health"
-echo ""
-echo "Test Ollama connectivity from pod:"
-echo "  kubectl exec -it -n inference-sentinel deploy/sentinel -- curl -s http://host.minikube.internal:11434/api/tags"
 echo "============================================"
 
 # Show pod status

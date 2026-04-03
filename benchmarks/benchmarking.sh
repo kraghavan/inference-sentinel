@@ -8,7 +8,7 @@ done
 # 6. Hard refresh Grafana (Cmd+Shift+R)
 
 # Run all benchmarks
-python -m benchmarks.harness --generate --count 1000
+python -m benchmarks.harness --generate --count 50
 python -m benchmarks.harness --experiment classification --ner
 python -m benchmarks.harness --experiment routing
 python -m benchmarks.harness --experiment cost

@@ -8,7 +8,7 @@ namespace: inference-sentinel
 
 resources:
   - namespace.yaml
-  - secrets.yaml
+  # - secrets.yaml <-- add this secrets if it has actual values and dont commit such a file with your real token values. 
   - configmap.yaml
   - pvcs.yaml
   - sentinel.yaml
